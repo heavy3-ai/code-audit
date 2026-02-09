@@ -6,7 +6,7 @@ Runs 3 parallel reviews via OpenRouter with specialized roles + web search.
 This file is MIT licensed and fully open source.
 Sponsored by Heavy3.ai - Multi-model AI for high-stakes decisions.
 """
-__version__ = "2.1.0"
+__version__ = "1.1.0"
 __version_date__ = "2025-02-09"
 
 import argparse
