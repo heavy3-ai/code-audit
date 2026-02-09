@@ -278,6 +278,37 @@ class TestCrossFileDependencies:
 
         assert "## Cross-File Dependencies" not in message
 
+    def test_dependent_files_omitted_when_key_missing(self):
+        """Verify no error when dependent_files key is absent entirely."""
+        context = {
+            "review_type": "code",
+            "diff": "some diff",
+            "changed_files": [],
+            "file_contents": {},
+            "documentation": {},
+            "test_files": {}
+            # no dependent_files key at all
+        }
+        message = build_user_message(context, "code")
+
+        assert "## Cross-File Dependencies" not in message
+        assert "## Code Changes (Diff)" in message
+
+    def test_dependent_files_omitted_when_empty_dict(self):
+        """Verify empty dict produces no section (same as missing key)."""
+        context = {
+            "review_type": "code",
+            "diff": "some diff",
+            "changed_files": [],
+            "file_contents": {},
+            "documentation": {},
+            "test_files": {},
+            "dependent_files": {}
+        }
+        message = build_user_message(context, "code")
+
+        assert "## Cross-File Dependencies" not in message
+
     def test_dependent_files_after_test_files(self, sample_code_context_with_dependencies):
         """Verify dependent files appear after test files (context positioning)."""
         sample_code_context_with_dependencies["test_files"] = {
@@ -289,12 +320,166 @@ class TestCrossFileDependencies:
         dep_pos = message.index("## Cross-File Dependencies")
         assert dep_pos > test_pos
 
+    def test_dependent_files_after_documentation(self, sample_code_context_with_dependencies):
+        """Verify dependent files appear after documentation section."""
+        sample_code_context_with_dependencies["documentation"] = {
+            "CLAUDE.md": "# Project guidelines"
+        }
+        message = build_user_message(sample_code_context_with_dependencies, "code")
+
+        doc_pos = message.index("## Relevant Documentation")
+        dep_pos = message.index("## Cross-File Dependencies")
+        assert dep_pos > doc_pos
+
+    def test_dependent_files_after_diff(self, sample_code_context_with_dependencies):
+        """Verify dependent files appear after code diff (diff is critical, deps are supporting)."""
+        message = build_user_message(sample_code_context_with_dependencies, "code")
+
+        diff_pos = message.index("## Code Changes (Diff)")
+        dep_pos = message.index("## Cross-File Dependencies")
+        assert dep_pos > diff_pos
+
+    def test_dependent_files_rendered_in_code_blocks(self, sample_code_context_with_dependencies):
+        """Verify each dependent file's content is wrapped in code blocks."""
+        message = build_user_message(sample_code_context_with_dependencies, "code")
+
+        # Each file should have ### header and ``` code block
+        assert "### src/views/cart.py\n```\n" in message
+        assert "### src/api/orders.py\n```\n" in message
+
+    def test_dependent_files_content_preserved(self, sample_code_context_with_dependencies):
+        """Verify the exact content of dependent files is included verbatim."""
+        message = build_user_message(sample_code_context_with_dependencies, "code")
+
+        assert "1:from utils import calculate_total" in message
+        assert "15:    total = calculate_total(self.items)" in message
+        assert "3:from utils import calculate_total" in message
+        assert "42:    order_total = calculate_total(line_items)" in message
+
+    def test_single_dependent_file(self):
+        """Verify section works with just one dependent file."""
+        context = {
+            "review_type": "code",
+            "diff": "some diff",
+            "changed_files": ["src/foo.py"],
+            "file_contents": {"src/foo.py": "def foo(): pass"},
+            "documentation": {},
+            "test_files": {},
+            "dependent_files": {
+                "src/bar.py": "from foo import foo"
+            }
+        }
+        message = build_user_message(context, "code")
+
+        assert "## Cross-File Dependencies" in message
+        assert "### src/bar.py" in message
+        assert "from foo import foo" in message
+
+    def test_many_dependent_files(self):
+        """Verify section handles many dependent files without limit."""
+        deps = {f"src/module_{i}.py": f"from utils import func_{i}" for i in range(25)}
+        context = {
+            "review_type": "code",
+            "diff": "some diff",
+            "changed_files": ["src/utils.py"],
+            "file_contents": {"src/utils.py": "# utils"},
+            "documentation": {},
+            "test_files": {},
+            "dependent_files": deps
+        }
+        message = build_user_message(context, "code")
+
+        assert "## Cross-File Dependencies" in message
+        for i in range(25):
+            assert f"src/module_{i}.py" in message
+            assert f"from utils import func_{i}" in message
+
+    def test_dependent_files_do_not_affect_other_sections(self, sample_code_context):
+        """Verify adding dependent_files doesn't alter existing sections."""
+        message_without = build_user_message(sample_code_context, "code")
+
+        sample_code_context["dependent_files"] = {
+            "src/other.py": "import utils"
+        }
+        message_with = build_user_message(sample_code_context, "code")
+
+        # Everything before the deps section should be identical
+        prefix_without = message_without.rstrip()
+        # The message_with should start with the same content
+        assert message_with.startswith(prefix_without[:100])
+        # Original sections still present
+        assert "## Code Changes (Diff)" in message_with
+        assert "## Full File Contents" in message_with
+
+    def test_dependent_files_with_special_characters_in_path(self):
+        """Verify file paths with special characters render correctly."""
+        context = {
+            "review_type": "code",
+            "diff": "some diff",
+            "changed_files": [],
+            "file_contents": {},
+            "documentation": {},
+            "test_files": {},
+            "dependent_files": {
+                "src/components/UserList (copy).tsx": "import { User } from '../types'"
+            }
+        }
+        message = build_user_message(context, "code")
+
+        assert "### src/components/UserList (copy).tsx" in message
+
     def test_council_includes_dependent_files(self, sample_code_context_with_dependencies):
         """Verify council build_user_message also includes dependencies."""
         message = council_build_user_message(sample_code_context_with_dependencies, "code")
 
         assert "## Cross-File Dependencies" in message
         assert "src/views/cart.py" in message
+
+    def test_council_omits_when_missing(self, sample_code_context):
+        """Verify council omits section when no dependent_files."""
+        message = council_build_user_message(sample_code_context, "code")
+
+        assert "## Cross-File Dependencies" not in message
+
+    def test_council_matches_review_with_dependencies(self, sample_code_context_with_dependencies):
+        """Verify council and review produce same dependent_files section."""
+        review_msg = build_user_message(sample_code_context_with_dependencies, "code")
+        council_msg = council_build_user_message(sample_code_context_with_dependencies, "code")
+
+        # Extract the Cross-File Dependencies section from both
+        review_deps = review_msg[review_msg.index("## Cross-File Dependencies"):]
+        council_deps = council_msg[council_msg.index("## Cross-File Dependencies"):]
+
+        assert review_deps == council_deps
+
+    def test_dependent_files_works_for_pr_review(self):
+        """Verify dependent_files renders in PR review context."""
+        context = {
+            "review_type": "pr",
+            "pr_metadata": {
+                "number": 10,
+                "title": "Refactor utils",
+                "body": "Breaking change to utils API",
+                "author": "dev",
+                "base_branch": "main",
+                "head_branch": "refactor",
+                "additions": 5,
+                "deletions": 3
+            },
+            "diff": "some diff",
+            "changed_files": ["src/utils.py"],
+            "file_contents": {"src/utils.py": "# refactored"},
+            "documentation": {},
+            "test_files": {},
+            "dependent_files": {
+                "src/app.py": "from utils import old_function"
+            }
+        }
+        message = build_user_message(context, "pr")
+
+        assert "## Pull Request Information" in message
+        assert "## Cross-File Dependencies" in message
+        assert "from utils import old_function" in message
 
 
 class TestCouncilContextBuilding:
