@@ -403,6 +403,11 @@ def build_user_message(context: dict, review_type: str) -> str:
         for path, content in context["test_files"].items():
             parts.append(f"### {path}\n```\n{content}\n```\n\n")
 
+    if context.get("dependent_files"):
+        parts.append("## Cross-File Dependencies\n")
+        for path, content in context["dependent_files"].items():
+            parts.append(f"### {path}\n```\n{content}\n```\n\n")
+
     return "".join(parts)
 
 

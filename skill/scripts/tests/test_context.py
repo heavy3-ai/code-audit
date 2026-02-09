@@ -260,6 +260,43 @@ class TestConversationContextLimits:
             assert f"Message {i}" in message
 
 
+class TestCrossFileDependencies:
+    """Tests for cross-file dependency context building."""
+
+    def test_dependent_files_included_when_present(self, sample_code_context_with_dependencies):
+        """Verify dependent files section appears when data is provided."""
+        message = build_user_message(sample_code_context_with_dependencies, "code")
+
+        assert "## Cross-File Dependencies" in message
+        assert "src/views/cart.py" in message
+        assert "src/api/orders.py" in message
+        assert "calculate_total" in message
+
+    def test_dependent_files_omitted_when_empty(self, sample_code_context):
+        """Verify dependent files section is absent when no dependencies."""
+        message = build_user_message(sample_code_context, "code")
+
+        assert "## Cross-File Dependencies" not in message
+
+    def test_dependent_files_after_test_files(self, sample_code_context_with_dependencies):
+        """Verify dependent files appear after test files (context positioning)."""
+        sample_code_context_with_dependencies["test_files"] = {
+            "tests/test_utils.py": "def test_calculate(): pass"
+        }
+        message = build_user_message(sample_code_context_with_dependencies, "code")
+
+        test_pos = message.index("## Related Test Files")
+        dep_pos = message.index("## Cross-File Dependencies")
+        assert dep_pos > test_pos
+
+    def test_council_includes_dependent_files(self, sample_code_context_with_dependencies):
+        """Verify council build_user_message also includes dependencies."""
+        message = council_build_user_message(sample_code_context_with_dependencies, "code")
+
+        assert "## Cross-File Dependencies" in message
+        assert "src/views/cart.py" in message
+
+
 class TestCouncilContextBuilding:
     """Tests for council.py context building (should match review.py)."""
 

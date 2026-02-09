@@ -2,7 +2,7 @@
 name: h3
 description: Heavy3 Code Audit - Multi-model code review for coding agents (Sponsored by Heavy3.ai)
 argument-hint: "[pr <number>] [plan <file>] [<file>.md] [<range>] [--council] [--staged] [--commit] [--free] [--model MODEL]"
-allowed-tools: Read, Bash, Glob, Grep, Write
+allowed-tools: Read, Bash, Glob, Grep
 disable-model-invocation: true
 ---
 
@@ -184,7 +184,7 @@ OPENROUTER_API_KEY=your-key-here
    - Run: `python3 ~/.claude/skills/h3/scripts/list-free-models.py --json`
    - Show available free models
    - Ask: "Pick a new free model?"
-   - If user selects, UPDATE config.json with new free_model
+   - If user selects, UPDATE config.json with new free_model using Bash (e.g., `python3 -c "import json; ..."` to update the JSON file)
    - Retry with new model
 
 ---
@@ -242,9 +242,9 @@ council_cost = (input_tokens * (1.75 + 2.00 + 3.00) + output_tokens * (14 + 12 +
 
 ### Display Cost Estimate and Confirm
 
-**IMPORTANT: Show cost estimate BEFORE submitting to OpenRouter and wait for user confirmation.**
+**IMPORTANT: Gather ALL context and save the temp JSON file FIRST, then calculate the cost estimate from the actual context size. This ensures an accurate estimate. The cost estimate is the ONLY user-facing prompt — do not interrupt the user for anything else.**
 
-After gathering context but BEFORE calling the review API:
+After gathering context and saving to `/tmp/h3-context.json`, but BEFORE calling the review API:
 
 ```markdown
 ## Cost Estimate
@@ -403,12 +403,13 @@ After user selects grouping:
 4. Read FULL content of each changed file
 5. Find relevant documentation (CLAUDE.md, docs folder)
 6. Include related test files
-7. Include conversation context (see below)
-8. Compile context JSON to temp file
-9. **Calculate and display cost estimate, wait for user confirmation** (see Cost Estimation section)
-10. If user confirms, run review script:
-    - Default: `python3 ~/.claude/skills/h3/scripts/review.py --type code --context-file <path>`
-    - With --council: `python3 ~/.claude/skills/h3/scripts/council.py --type code --context-file <path>`
+7. Find cross-file dependencies (see below)
+8. Include conversation context (see below)
+9. **Save context JSON to `/tmp/h3-context.json` using Bash** (see Temp File Handling — do NOT use the Write tool)
+10. **Calculate accurate cost estimate from the actual context size, display, and wait for user confirmation** (see Cost Estimation section)
+11. If user confirms, run review script immediately:
+    - Default: `python3 ~/.claude/skills/h3/scripts/review.py --type code --context-file /tmp/h3-context.json`
+    - With --council: `python3 ~/.claude/skills/h3/scripts/council.py --type code --context-file /tmp/h3-context.json`
 
 ### Last Commit Review Workflow (`--commit`)
 
@@ -421,8 +422,9 @@ After user selects grouping:
 6. Read FULL content of each changed file
 7. Find relevant documentation (CLAUDE.md, docs folder)
 8. Include related test files
-9. Include conversation context (see below)
-10. Add commit metadata to context JSON:
+9. Find cross-file dependencies (see below)
+10. Include conversation context (see below)
+11. Add commit metadata to context JSON:
     ```json
     "commit_metadata": {
       "hash": "abc123...",
@@ -431,10 +433,11 @@ After user selects grouping:
       "date": "2025-01-25"
     }
     ```
-11. **Calculate and display cost estimate, wait for user confirmation** (see Cost Estimation section)
-12. If user confirms, run review script:
-    - Default: `python3 ~/.claude/skills/h3/scripts/review.py --type code --context-file <path>`
-    - With --council: `python3 ~/.claude/skills/h3/scripts/council.py --type code --context-file <path>`
+12. **Save context JSON to `/tmp/h3-context.json` using Bash** (see Temp File Handling)
+13. **Calculate accurate cost estimate from the actual context size, display, and wait for user confirmation** (see Cost Estimation section)
+14. If user confirms, run review script immediately:
+    - Default: `python3 ~/.claude/skills/h3/scripts/review.py --type code --context-file /tmp/h3-context.json`
+    - With --council: `python3 ~/.claude/skills/h3/scripts/council.py --type code --context-file /tmp/h3-context.json`
 
 ### Commit Range Review Workflow (`<range>` like `HEAD~3..HEAD`)
 
@@ -451,8 +454,9 @@ After user selects grouping:
 7. Read FULL content of each changed file
 8. Find relevant documentation (CLAUDE.md, docs folder)
 9. Include related test files
-10. Include conversation context (see below)
-11. Add commit range metadata to context JSON:
+10. Find cross-file dependencies (see below)
+11. Include conversation context (see below)
+12. Add commit range metadata to context JSON:
     ```json
     "commit_range": {
       "range": "HEAD~3..HEAD",
@@ -463,8 +467,9 @@ After user selects grouping:
       "total_commits": 2
     }
     ```
-12. **Calculate and display cost estimate, wait for user confirmation** (see Cost Estimation section)
-13. If user confirms, run review script (single model or council)
+13. **Save context JSON to `/tmp/h3-context.json` using Bash** (see Temp File Handling)
+14. **Calculate accurate cost estimate from the actual context size, display, and wait for user confirmation** (see Cost Estimation section)
+15. If user confirms, run review script immediately (single model or council) with `--context-file /tmp/h3-context.json`
 
 ### Plan Review Workflow (`plan <path>` or `<file>.md` or detected plan)
 
@@ -477,7 +482,7 @@ After user selects grouping:
 3. Parse plan for file paths and read those files into `file_contents`
 4. Find relevant documentation (CLAUDE.md, docs folder)
 5. Include conversation context (see below)
-6. Compile context JSON to temp file with `plan_content` included:
+6. **Save context JSON to `/tmp/h3-context.json` using Bash** (see Temp File Handling) with `plan_content` included:
    ```json
    {
      "review_type": "plan",
@@ -487,10 +492,10 @@ After user selects grouping:
      "conversation_context": { ... }
    }
    ```
-7. **Calculate and display cost estimate, wait for user confirmation** (see Cost Estimation section)
-8. If user confirms, run review script:
-   - Default: `python3 ~/.claude/skills/h3/scripts/review.py --type plan --context-file <path>`
-   - With --council: `python3 ~/.claude/skills/h3/scripts/council.py --type plan --context-file <path>`
+7. **Calculate accurate cost estimate from the actual context size, display, and wait for user confirmation** (see Cost Estimation section)
+8. If user confirms, run review script immediately:
+   - Default: `python3 ~/.claude/skills/h3/scripts/review.py --type plan --context-file /tmp/h3-context.json`
+   - With --council: `python3 ~/.claude/skills/h3/scripts/council.py --type plan --context-file /tmp/h3-context.json`
 
 **IMPORTANT**: Do NOT pass `--plan-file` as a separate argument. The plan content MUST be included directly in the context JSON file under the `plan_content` key.
 
@@ -501,10 +506,12 @@ After user selects grouping:
 3. Get PR diff: `gh pr diff <number>`
 4. Read full content of changed files
 5. Find relevant documentation
-6. Include conversation context (see below)
-7. Compile context JSON with pr_metadata
-8. **Calculate and display cost estimate, wait for user confirmation** (see Cost Estimation section)
-9. If user confirms, run review script (single model or council)
+6. Include related test files
+7. Find cross-file dependencies (see below)
+8. Include conversation context (see below)
+9. **Save context JSON (with pr_metadata) to `/tmp/h3-context.json` using Bash** (see Temp File Handling)
+10. **Calculate accurate cost estimate from the actual context size, display, and wait for user confirmation** (see Cost Estimation section)
+11. If user confirms, run review script immediately (single model or council) with `--context-file /tmp/h3-context.json`
 
 ---
 
@@ -531,6 +538,31 @@ Review the conversation history and include relevant context that explains the d
 - Maximum 3-5 exchanges (user message + your response = 1 exchange)
 - Keep each message under 500 characters (truncate if needed)
 - Total conversation context should not exceed ~2K tokens
+
+---
+
+## Find Cross-File Dependencies
+
+For code and PR reviews, search for files that import or reference changed files. This helps reviewers catch breaking changes.
+
+**When to include:** Only for code and PR reviews (not plan reviews).
+
+**How to gather:**
+
+1. For each file in `changed_files`, extract its basename (e.g., `utils.py` from `src/utils.py`)
+2. Search the project for files importing or referencing the changed files:
+   ```bash
+   grep -rn --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.py" --include="*.go" --include="*.rs" --include="*.java" \
+     -e "import.*<basename_without_ext>" -e "from.*<basename_without_ext>" -e "require.*<basename_without_ext>" \
+     --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=build --exclude-dir=dist --exclude-dir=__pycache__ --exclude-dir=.next --exclude-dir=venv --exclude-dir=.venv \
+     .
+   ```
+3. Filter results:
+   - **Exclude** files already in `file_contents` (already being reviewed)
+   - **Exclude** files already in `test_files`
+4. For each dependent file found, capture import line(s) + ~3 lines of surrounding context
+5. Add to context JSON as `dependent_files` dict (keyed by file path, values are the relevant snippets)
+6. If no dependencies found, omit the `dependent_files` key entirely
 
 ---
 
@@ -564,6 +596,10 @@ Review the conversation history and include relevant context that explains the d
   "test_files": {
     "path1.test.ts": "..."
   },
+  "dependent_files": {
+    "src/components/UserList.tsx": "import { validateEmail } from '../utils';\n...\nconst isValid = validateEmail(user.email);",
+    "src/api/handlers.ts": "import { calculateTotal } from '../utils';\n...\nreturn calculateTotal(cart.items);"
+  },
   "pr_metadata": {
     "number": 123,
     "title": "...",
@@ -582,6 +618,22 @@ Review the conversation history and include relevant context that explains the d
   }
 }
 ```
+
+---
+
+## Temp File Handling
+
+**CRITICAL: Use Bash to write the context JSON — NEVER use the Write tool.**
+
+The context JSON must be saved to a temp file without triggering user permission prompts. Always use Bash:
+
+```bash
+cat > /tmp/h3-context.json << 'CONTEXT_EOF'
+{...the JSON...}
+CONTEXT_EOF
+```
+
+This ensures the **only** user-facing prompt is the cost estimate confirmation. Do NOT use the Write tool for this file.
 
 ---
 
@@ -715,6 +767,7 @@ After presenting results and user makes a choice (or after any review completes)
 
 ## Important Guidelines
 
+- **Single confirmation only**: Gather all context and save the temp JSON file BEFORE showing the cost estimate. The cost estimate is the ONLY prompt requiring user input. Use Bash to write temp files to `/tmp/` — the Write tool is not available.
 - **Be honest**: Disagree with reviewers when warranted
 - **Be specific**: Exact files and line numbers
 - **Don't auto-fix**: ALWAYS wait for user approval

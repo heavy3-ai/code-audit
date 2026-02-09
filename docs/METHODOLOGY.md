@@ -118,7 +118,7 @@ Based on LAURA (Zhang et al., IEEE ASE 2025) and CodeRabbit's context engineerin
 | **Related Tests** | Test files matching changed files | High | `test_files` dict |
 | **Problem Description** | PR description, issue context | High | `pr_metadata.body` |
 | **Documentation** | CLAUDE.md, architecture docs | Medium | `documentation` dict |
-| **Cross-File Dependencies** | Files that import/call changed code | For breaking changes | Not yet implemented |
+| **Cross-File Dependencies** | Files that import/call changed code | For breaking changes | `dependent_files` dict |
 
 **Key Research Insight**: "Incorporating problem descriptions into prompts consistently improved performance, highlighting the importance of code comments and pull request descriptions." (Evaluating LLMs for Code Review, 2025)
 
@@ -147,6 +147,7 @@ Based on LAURA (Zhang et al., IEEE ASE 2025) and CodeRabbit's context engineerin
 │   - Full file contents                   │  ← file_contents
 │   - Documentation                        │  ← documentation
 │   - Test files                           │  ← test_files
+│   - Cross-file dependencies              │  ← dependent_files
 ├─────────────────────────────────────────┤
 │ END: Instructions (in system prompt)     │
 │   - Review focus areas                   │  ← SYSTEM_PROMPT
@@ -226,6 +227,7 @@ Heavy3 Code Audit uniquely offers **pre-implementation validation**:
 | 3-model parallel execution | `council.py:514-540` | Verified |
 | Specialized prompts per role | `council.py:73-226` | Verified |
 | Web search integration | `council.py:375-377` | Verified |
+| Cross-file dependencies | `review.py:406-409`, `council.py:333-336` | Verified |
 
 **JSON Structure Sent to Models**:
 
@@ -247,6 +249,9 @@ Heavy3 Code Audit uniquely offers **pre-implementation validation**:
   },
   "test_files": {
     "src/foo.test.ts": "// Test content..."
+  },
+  "dependent_files": {
+    "src/bar.ts": "import { foo } from './foo';\n...\nfoo(data);"
   },
   "documentation": {
     "CLAUDE.md": "// Project guidelines..."

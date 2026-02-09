@@ -128,6 +128,25 @@ def sample_code_context_with_conversation():
 
 
 @pytest.fixture
+def sample_code_context_with_dependencies():
+    """Sample context with cross-file dependencies."""
+    return {
+        "review_type": "code",
+        "diff": "diff --git a/src/utils.py b/src/utils.py\n...",
+        "changed_files": ["src/utils.py"],
+        "file_contents": {
+            "src/utils.py": "def calculate_total(items):\n    return sum(item.price for item in items)\n"
+        },
+        "documentation": {},
+        "test_files": {},
+        "dependent_files": {
+            "src/views/cart.py": "1:from utils import calculate_total\n...\n15:    total = calculate_total(self.items)",
+            "src/api/orders.py": "3:from utils import calculate_total\n...\n42:    order_total = calculate_total(line_items)"
+        }
+    }
+
+
+@pytest.fixture
 def sample_plan_context():
     """Sample context for plan review."""
     return {
