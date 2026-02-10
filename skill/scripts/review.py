@@ -49,9 +49,17 @@ def retry_with_backoff(func, max_retries=MAX_RETRIES):
                 print(f"Request timed out. Retrying in {wait}s... (attempt {attempt + 2}/{max_retries})")
                 time.sleep(wait)
         except requests.exceptions.HTTPError as e:
-            # Retry on 5xx errors and 429 (rate limit)
+            # Extract error details from response body for diagnostics
             if hasattr(e, 'response') and e.response is not None:
                 status = e.response.status_code
+                try:
+                    error_body = e.response.json()
+                    error_msg = error_body.get("error", {}).get("message", "") if isinstance(error_body.get("error"), dict) else str(error_body.get("error", ""))
+                except Exception:
+                    error_msg = e.response.text[:500] if e.response.text else ""
+                if error_msg:
+                    print(f"HTTP {status}: {error_msg}", file=sys.stderr)
+                # Retry on 5xx errors and 429 (rate limit)
                 if status >= 500 or status == 429:
                     last_error = e
                     if attempt < max_retries - 1:
@@ -82,6 +90,7 @@ DEFAULT_CONFIG = {
     "docs_folder": "documents",
     "max_file_size": 50000,
     "max_context": 200000,                   # 200K context limit
+    "max_output_tokens": 8192,              # Output cap per reviewer (prevents silent truncation)
     "enable_web_search": True                # Web search enabled by default
 }
 
@@ -486,18 +495,20 @@ def call_openrouter(config: dict, review_type: str, context: dict, stream: bool 
         if not model.endswith(":online") and ":free" not in model:
             model = f"{model}:online"
 
+    max_output_tokens = config.get("max_output_tokens", 8192)
     payload = {
         "model": model,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}
         ],
-        "stream": stream
+        "stream": stream,
+        "max_output_tokens": max_output_tokens,
     }
 
-    # OpenRouter server-side compression (skip for Gemini to avoid corrupting thought_signature)
-    if not model.startswith("google/gemini-"):
-        payload["transforms"] = ["middle-out"]
+    # OpenRouter server-side compression for all models.
+    # Gemini skip only needed for tool-calling streams (thought_signature); completions are safe.
+    payload["transforms"] = ["middle-out"]
 
     # Add web search plugin if enabled
     if enable_web_search and ":online" in model:

@@ -45,6 +45,14 @@ def retry_with_backoff(func, role_name="API", max_retries=MAX_RETRIES):
         except requests.exceptions.HTTPError as e:
             if hasattr(e, 'response') and e.response is not None:
                 status = e.response.status_code
+                # Extract error details from response body for diagnostics
+                try:
+                    error_body = e.response.json()
+                    error_msg = error_body.get("error", {}).get("message", "") if isinstance(error_body.get("error"), dict) else str(error_body.get("error", ""))
+                except Exception:
+                    error_msg = e.response.text[:500] if e.response.text else ""
+                if error_msg:
+                    print(f"[{role_name}] HTTP {status}: {error_msg}", file=sys.stderr)
                 if status >= 500 or status == 429:
                     last_error = e
                     if attempt < max_retries - 1:
@@ -234,7 +242,7 @@ def get_skill_dir():
 
 def load_config():
     config_path = get_skill_dir() / 'config.json'
-    default = {"reasoning": "high", "max_context": 200000}
+    default = {"reasoning": "high", "max_context": 200000, "max_output_tokens": 8192}
     if config_path.exists():
         with open(config_path) as f:
             return {**default, **json.load(f)}
@@ -365,7 +373,8 @@ def extract_content(result: dict) -> str:
 
 def call_reviewer(role: str, model: str, name: str, user_message: str,
                   review_type: str, api_key: str, reasoning: str,
-                  search_engine: str = None) -> dict:
+                  search_engine: str = None,
+                  max_output_tokens: int = 8192) -> dict:
     prompts = CODE_PROMPTS if review_type in ["code", "pr"] else PLAN_PROMPTS
     system_prompt = prompts.get(role, prompts.get("correctness", ""))
 
@@ -374,12 +383,13 @@ def call_reviewer(role: str, model: str, name: str, user_message: str,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}
-        ]
+        ],
+        "max_output_tokens": max_output_tokens,
     }
 
-    # OpenRouter server-side compression (skip for Gemini to avoid corrupting thought_signature)
-    if not model.startswith("google/gemini-"):
-        payload["transforms"] = ["middle-out"]
+    # OpenRouter server-side compression for all models.
+    # Gemini skip only needed for tool-calling streams (thought_signature); completions are safe.
+    payload["transforms"] = ["middle-out"]
 
     # Add web search plugin (Pro feature)
     if search_engine:
@@ -497,6 +507,7 @@ def run_council(context: dict, review_type: str) -> dict:
     config = load_config()
     api_key = get_api_key()
     reasoning = config.get("reasoning", "high")
+    max_output_tokens = config.get("max_output_tokens", 8192)
 
     council_type = "plan" if review_type == "plan" else "code"
     council = get_council_config(config, council_type)
@@ -531,7 +542,8 @@ def run_council(context: dict, review_type: str) -> dict:
                 review_type,
                 api_key,
                 reasoning,
-                member.get("search_engine")
+                member.get("search_engine"),
+                max_output_tokens,
             ): member
             for member in council
         }
