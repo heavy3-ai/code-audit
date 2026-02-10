@@ -495,6 +495,10 @@ def call_openrouter(config: dict, review_type: str, context: dict, stream: bool 
         "stream": stream
     }
 
+    # OpenRouter server-side compression (skip for Gemini to avoid corrupting thought_signature)
+    if not model.startswith("google/gemini-"):
+        payload["transforms"] = ["middle-out"]
+
     # Add web search plugin if enabled
     if enable_web_search and ":online" in model:
         # Use Exa for semantic search (works with most models)
