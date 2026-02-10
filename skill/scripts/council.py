@@ -499,8 +499,9 @@ def run_council(context: dict, review_type: str) -> dict:
 
     user_message = build_user_message(context, review_type)
 
-    # 200K context limit
-    max_context = config.get("max_context", 200000)
+    # Council targets 3 models with different limits (Grok 4 is smallest at 131K tokens).
+    # Use 120K chars (~30K tokens) to safely fit all models through OpenRouter.
+    max_context = min(config.get("max_context", 200000), 120000)
     if len(user_message) > max_context:
         user_message = user_message[:max_context] + "\n\n[... truncated ...]"
 
