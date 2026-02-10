@@ -90,7 +90,7 @@ DEFAULT_CONFIG = {
     "docs_folder": "documents",
     "max_file_size": 50000,
     "max_context": 200000,                   # 200K context limit
-    "max_output_tokens": 8192,              # Output cap per reviewer (prevents silent truncation)
+    "max_output_tokens": 32768,             # Output cap per reviewer (32K: ample for reasoning + content)
     "enable_web_search": True                # Web search enabled by default
 }
 
@@ -454,7 +454,17 @@ def extract_content(result: dict) -> str:
             if result.get("error"):
                 error_msg = result["error"].get("message", "Unknown error")
                 return f"ERROR: API returned error: {error_msg}"
-            logger.warning("Empty content in OpenRouter response")
+            finish = choices[0].get("finish_reason", "unknown")
+            usage = result.get("usage", {})
+            tokens = usage.get("completion_tokens", 0)
+            if finish == "length":
+                logger.warning(f"Response truncated: finish_reason=length, {tokens} tokens")
+                return f"ERROR: Response truncated (finish_reason=length, {tokens} tokens). Model may have exhausted output budget on reasoning."
+            if finish == "content_filter":
+                logger.warning("Content blocked by safety filter")
+                return "ERROR: Content blocked by safety filter (finish_reason=content_filter)"
+            if tokens > 0:
+                logger.warning(f"Empty content: finish={finish}, tokens={tokens}, keys={list(message.keys())}")
             return "ERROR: Empty content in API response. The model returned no text."
 
         return content
@@ -522,9 +532,7 @@ def call_openrouter(config: dict, review_type: str, context: dict, stream: bool 
         payload["provider"] = {
             "require_parameters": False
         }
-        # For OpenAI models with reasoning
-        if "gpt" in config["model"].lower() or "o1" in config["model"].lower():
-            payload["reasoning"] = {"effort": reasoning}
+        payload["reasoning"] = {"effort": reasoning}
 
     headers = {
         "Authorization": f"Bearer {api_key}",

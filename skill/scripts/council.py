@@ -242,7 +242,7 @@ def get_skill_dir():
 
 def load_config():
     config_path = get_skill_dir() / 'config.json'
-    default = {"reasoning": "high", "max_context": 200000, "max_output_tokens": 8192}
+    default = {"reasoning": "high", "max_context": 200000, "max_output_tokens": 32768}
     if config_path.exists():
         with open(config_path) as f:
             return {**default, **json.load(f)}
@@ -365,6 +365,15 @@ def extract_content(result: dict) -> str:
         if not content:
             if result.get("error"):
                 return f"ERROR: {result['error'].get('message', 'Unknown error')}"
+            finish = choices[0].get("finish_reason", "unknown")
+            usage = result.get("usage", {})
+            tokens = usage.get("completion_tokens", 0)
+            if finish == "length":
+                return f"ERROR: Response truncated (finish_reason=length, {tokens} tokens). Model may have exhausted output budget on reasoning."
+            if finish == "content_filter":
+                return "ERROR: Content blocked by safety filter (finish_reason=content_filter)"
+            if tokens > 0:
+                print(f"[extract] Empty content: finish={finish}, tokens={tokens}, keys={list(message.keys())}", file=sys.stderr)
             return "ERROR: Empty content in API response"
         return content
     except (IndexError, KeyError, TypeError) as e:
@@ -374,7 +383,7 @@ def extract_content(result: dict) -> str:
 def call_reviewer(role: str, model: str, name: str, user_message: str,
                   review_type: str, api_key: str, reasoning: str,
                   search_engine: str = None,
-                  max_output_tokens: int = 8192) -> dict:
+                  max_output_tokens: int = 32768) -> dict:
     prompts = CODE_PROMPTS if review_type in ["code", "pr"] else PLAN_PROMPTS
     system_prompt = prompts.get(role, prompts.get("correctness", ""))
 
@@ -397,8 +406,7 @@ def call_reviewer(role: str, model: str, name: str, user_message: str,
 
     if reasoning != "none":
         payload["provider"] = {"require_parameters": False}
-        if "gpt" in model.lower() or "o1" in model.lower():
-            payload["reasoning"] = {"effort": reasoning}
+        payload["reasoning"] = {"effort": reasoning}
 
     headers = {
         "Authorization": f"Bearer {api_key}",

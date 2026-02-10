@@ -10,8 +10,8 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from review import build_user_message, get_system_prompt
-from council import build_user_message as council_build_user_message
+from review import build_user_message, get_system_prompt, extract_content as review_extract_content
+from council import build_user_message as council_build_user_message, extract_content as council_extract_content
 
 
 class TestBuildUserMessageCodeReview:
@@ -503,3 +503,41 @@ class TestCouncilContextBuilding:
 
         assert "## Developer Intent" in message
         assert "**Original Request:**" in message
+
+
+class TestExtractContentDiagnostics:
+    """Tests for extract_content() diagnostic messages on empty responses."""
+
+    def test_extract_content_finish_reason_length(self):
+        """finish_reason=length returns descriptive truncation error."""
+        result = {
+            "choices": [{"message": {"content": ""}, "finish_reason": "length"}],
+            "usage": {"completion_tokens": 3997}
+        }
+        for extract in (council_extract_content, review_extract_content):
+            msg = extract(result)
+            assert "truncated" in msg.lower()
+            assert "length" in msg
+            assert "3997" in msg
+
+    def test_extract_content_finish_reason_content_filter(self):
+        """finish_reason=content_filter returns safety filter error."""
+        result = {
+            "choices": [{"message": {"content": ""}, "finish_reason": "content_filter"}],
+            "usage": {"completion_tokens": 500}
+        }
+        for extract in (council_extract_content, review_extract_content):
+            msg = extract(result)
+            assert "safety filter" in msg.lower() or "content_filter" in msg
+
+    def test_extract_content_normal_empty(self):
+        """Empty content with finish_reason=stop returns generic error."""
+        result = {
+            "choices": [{"message": {"content": ""}, "finish_reason": "stop"}],
+            "usage": {"completion_tokens": 0}
+        }
+        for extract in (council_extract_content, review_extract_content):
+            msg = extract(result)
+            assert "ERROR" in msg
+            assert "truncated" not in msg.lower()
+            assert "safety filter" not in msg.lower()

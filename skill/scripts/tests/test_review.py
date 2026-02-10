@@ -249,8 +249,8 @@ class TestOpenRouterAPICall:
         assert payload["reasoning"]["effort"] == "high"
 
     @responses.activate
-    def test_call_openrouter_non_gpt_no_reasoning(self, mock_api_key, sample_code_context):
-        """Verify reasoning parameter NOT added for non-GPT models."""
+    def test_call_openrouter_non_gpt_gets_reasoning(self, mock_api_key, sample_code_context):
+        """Verify reasoning parameter is sent for ALL models (not just GPT)."""
         responses.add(
             responses.POST,
             OPENROUTER_URL,
@@ -264,8 +264,8 @@ class TestOpenRouterAPICall:
         request = responses.calls[0].request
         payload = json.loads(request.body)
 
-        # DeepSeek shouldn't have reasoning param
-        assert "reasoning" not in payload
+        # All models now get reasoning (require_parameters: False handles unsupported ones)
+        assert payload["reasoning"] == {"effort": "high"}
 
     @responses.activate
     def test_call_openrouter_truncates_large_context(self, mock_api_key, large_context):
