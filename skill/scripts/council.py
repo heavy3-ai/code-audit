@@ -402,7 +402,7 @@ def call_reviewer(role: str, model: str, name: str, user_message: str,
 
     # Add web search plugin (Pro feature)
     if search_engine:
-        payload["plugins"] = [{"id": "web", "engine": search_engine}]
+        payload["plugins"] = [{"id": "web", "engine": search_engine, "max_results": 5}]
 
     if reasoning != "none":
         payload["provider"] = {"require_parameters": False}
@@ -438,6 +438,36 @@ def call_reviewer(role: str, model: str, name: str, user_message: str,
                 "output": result.get("usage", {}).get("completion_tokens", 0),
             }
         }
+    except requests.exceptions.HTTPError as e:
+        # 413: context too large — retry once without search plugin
+        if "plugins" in payload and hasattr(e, 'response') and e.response is not None and e.response.status_code == 413:
+            print(f"[{name}] 413 too large — retrying without search plugin", file=sys.stderr)
+            payload.pop("plugins")
+            try:
+                resp = retry_with_backoff(make_request, role_name=name)
+                result = resp.json()
+                elapsed_ms = int((time.time() - start) * 1000)
+                return {
+                    "role": role,
+                    "name": name,
+                    "model": model,
+                    "content": extract_content(result),
+                    "elapsed_ms": elapsed_ms,
+                    "tokens": {
+                        "input": result.get("usage", {}).get("prompt_tokens", 0),
+                        "output": result.get("usage", {}).get("completion_tokens", 0),
+                    }
+                }
+            except Exception as e2:
+                e = e2  # fall through to error return
+        return {
+            "role": role,
+            "name": name,
+            "model": model,
+            "content": f"ERROR: {str(e)} (after {MAX_RETRIES} retries)",
+            "elapsed_ms": int((time.time() - start) * 1000),
+            "error": str(e)
+        }
     except Exception as e:
         return {
             "role": role,
@@ -464,26 +494,26 @@ def get_council_config(config: dict, council_type: str) -> list:
     council_models = config.get("council_models", {})
     models = {**DEFAULT_COUNCIL_MODELS, **council_models}
 
-    # Check if web search is enabled
-    enable_web_search = config.get("enable_web_search", False)
+    # Check if web search is enabled (must be boolean true, not truthy string)
+    enable_web_search = config.get("enable_web_search", False) is True
 
     if council_type == "code":
         return [
             {
                 "role": "correctness",
-                "model": models["correctness"] + (":online" if enable_web_search else ""),
+                "model": models["correctness"],
                 "name": "Correctness Expert",
                 "search_engine": "native" if enable_web_search else None
             },
             {
                 "role": "performance",
-                "model": models["performance"] + (":online" if enable_web_search else ""),
+                "model": models["performance"],
                 "name": "Performance Critic",
                 "search_engine": "exa" if enable_web_search else None
             },
             {
                 "role": "security",
-                "model": models["security"] + (":online" if enable_web_search else ""),
+                "model": models["security"],
                 "name": "Security Analyst",
                 "search_engine": "exa" if enable_web_search else None
             },
@@ -492,19 +522,19 @@ def get_council_config(config: dict, council_type: str) -> list:
         return [
             {
                 "role": "design",
-                "model": models["correctness"] + (":online" if enable_web_search else ""),
+                "model": models["correctness"],
                 "name": "Design Expert",
                 "search_engine": "native" if enable_web_search else None
             },
             {
                 "role": "scalability",
-                "model": models["performance"] + (":online" if enable_web_search else ""),
+                "model": models["performance"],
                 "name": "Scalability Analyst",
                 "search_engine": "exa" if enable_web_search else None
             },
             {
                 "role": "security",
-                "model": models["security"] + (":online" if enable_web_search else ""),
+                "model": models["security"],
                 "name": "Security Architect",
                 "search_engine": "exa" if enable_web_search else None
             },
