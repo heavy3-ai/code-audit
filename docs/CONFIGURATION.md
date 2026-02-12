@@ -4,7 +4,7 @@ Edit `~/.claude/skills/h3/config.json` (or `%USERPROFILE%\.claude\skills\h3\conf
 
 ```json
 {
-  "model": "moonshotai/kimi-k2.5",
+  "model": "z-ai/glm-5",
   "free_model": "nvidia/nemotron-3-nano-30b-a3b:free",
   "council_models": {
     "correctness": "openai/gpt-5.2",
@@ -22,7 +22,7 @@ Edit `~/.claude/skills/h3/config.json` (or `%USERPROFILE%\.claude\skills\h3\conf
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `model` | Model for single-model review | `moonshotai/kimi-k2.5` |
+| `model` | Model for single-model review | `z-ai/glm-5` |
 | `free_model` | Model for `--free` flag | `nvidia/nemotron-3-nano-30b-a3b:free` |
 | `council_models` | Models for council mode (see below) | GPT 5.2, Gemini 3 Pro, Grok 4 |
 | `reasoning` | Reasoning level (always `high` for code review) | `high` |
@@ -84,7 +84,7 @@ Customize which models are used for each council role:
 
 | Mode | Limit | Rationale |
 |------|-------|-----------|
-| **All modes** | 200K tokens | GPT 5.2 (400K), Gemini 3 Pro (1M), Grok 4 (256K), Kimi K2.5 (256K) - 200K as balanced limit |
+| **All modes** | 200K tokens | GPT 5.2 (400K), Gemini 3 Pro (1M), Grok 4 (256K), GLM 5 (202K) - 200K as balanced limit |
 
 The context limit includes: diff + full file contents + documentation + test files. For very large PRs, the skill automatically breaks them into module-by-module reviews.
 
@@ -94,7 +94,7 @@ The context limit includes: diff + full file contents + documentation + test fil
 
 | Mode | Model | Config Value | Price | Notes |
 |------|-------|--------------|-------|-------|
-| **Single** | Kimi K2.5 | `moonshotai/kimi-k2.5` | ~$0.60/$1.80 per 1M | **DEFAULT** - Excellent quality |
+| **Single** | GLM 5 | `z-ai/glm-5` | ~$1.00/$3.20 per 1M | **DEFAULT** - Excellent quality |
 | **Free** | Nemotron Nano | `nvidia/nemotron-3-nano-30b-a3b:free` | $0.00 | Rotating free model |
 | **Council** | 3-Model Council | See `council_models` | ~$6.75/$41 per 1M | GPT 5.2 + Gemini 3 Pro + Grok 4 |
 
@@ -139,10 +139,10 @@ For a typical small code review (~10K chars / ~2.5K tokens input):
 
 | Mode | Estimated Cost | Quality |
 |------|---------------|---------|
-| **Single** (Kimi K2.5) | ~$0.005 | Excellent |
+| **Single** (GLM 5) | ~$0.01 | Excellent |
 | **Free** | $0.00 | Very good |
 | **Council** (3-Model) | ~$0.12 | Best (multi-perspective) |
 
 For a larger review (~50K chars / ~12.5K tokens input): Single ~$0.01, Council ~$0.19
 
-**Default is Single** (Kimi K2.5) for excellent quality at minimal cost. Use `--free` for zero cost, or `--council` for multi-model consensus.
+**Default is Single** (GLM 5) for excellent quality at minimal cost. Use `--free` for zero cost, or `--council` for multi-model consensus.

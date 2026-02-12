@@ -38,7 +38,7 @@ def mock_no_api_key():
 def temp_config(tmp_path):
     """Create a temporary config file."""
     config = {
-        "model": "moonshotai/kimi-k2.5",
+        "model": "z-ai/glm-5",
         "free_model": "nvidia/nemotron-3-nano-30b-a3b:free",
         "reasoning": "high",
         "docs_folder": "documents",
@@ -57,7 +57,7 @@ def temp_config(tmp_path):
 def temp_pro_config(tmp_path):
     """Create a temporary config file with web search enabled (for council tests)."""
     config = {
-        "model": "moonshotai/kimi-k2.5",
+        "model": "z-ai/glm-5",
         "max_context": 200000,
         "enable_web_search": True
     }
@@ -223,7 +223,7 @@ def openrouter_success_response():
         "id": "gen-12345",
         "object": "chat.completion",
         "created": 1234567890,
-        "model": "moonshotai/kimi-k2.5",
+        "model": "z-ai/glm-5",
         "choices": [{
             "index": 0,
             "message": {
@@ -384,7 +384,7 @@ def mock_skill_dir(tmp_path, monkeypatch):
 
     # Create default config
     config = {
-        "model": "moonshotai/kimi-k2.5",
+        "model": "z-ai/glm-5",
         "reasoning": "high",
         "max_context": 200000,
         "enable_web_search": True

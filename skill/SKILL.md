@@ -13,7 +13,7 @@ disable-model-invocation: true
 You are helping the user get AI-powered code reviews via OpenRouter.
 
 **All features are free and open source:**
-- Single model review with Kimi K2.5 (best price/performance)
+- Single model review with GLM 5 (best price/performance)
 - 3-model council with GPT 5.2 + Gemini 3 Pro + Grok 4
 - Web search integration
 - Up to 200K token context
@@ -35,7 +35,7 @@ You are helping the user get AI-powered code reviews via OpenRouter.
 **Mode options:**
 - `--council` - Use 3-model council (GPT 5.2 + Gemini 3 Pro + Grok 4)
 - `--free` - Use rotating free model from config
-- `--model <name>` - Override model (shortcuts: gpt, kimi, deepseek, free)
+- `--model <name>` - Override model (shortcuts: glm, gpt, kimi, deepseek, free)
 
 ---
 
@@ -144,7 +144,7 @@ When user specifies a range, show commit summary before the review:
 Read the config from: `~/.claude/skills/h3/config.json`
 ```json
 {
-  "model": "moonshotai/kimi-k2.5",
+  "model": "z-ai/glm-5",
   "free_model": "nvidia/nemotron-3-nano-30b-a3b:free",
   "reasoning": "high",
   "docs_folder": "documents",
@@ -221,7 +221,7 @@ OPENROUTER_API_KEY=your-key-here
 
 | Model | Input | Output | Typical Review Cost |
 |-------|-------|--------|---------------------|
-| Kimi K2.5 (default) | $0.50 | $2.80 | ~$0.008-0.02 |
+| GLM 5 (default) | $1.00 | $3.20 | ~$0.008-0.02 |
 | GPT 5.2 (council) | $1.75 | $14.00 | ~$0.05-0.20 |
 | Gemini 3 Pro (council) | $2.00 | $12.00 | ~$0.05-0.18 |
 | Grok 4 (council) | $3.00 | $15.00 | ~$0.06-0.22 |
@@ -232,8 +232,8 @@ OPENROUTER_API_KEY=your-key-here
 input_tokens = total_context_chars / 4
 output_tokens = ~2500 (typical review length)
 
-# Single model mode (Kimi K2.5)
-single_cost = (input_tokens * 0.50 + output_tokens * 2.80) / 1_000_000
+# Single model mode (GLM 5)
+single_cost = (input_tokens * 1.00 + output_tokens * 3.20) / 1_000_000
 
 # Council mode (all 3 models in parallel)
 council_cost = (input_tokens * (1.75 + 2.00 + 3.00) + output_tokens * (14 + 12 + 15)) / 1_000_000

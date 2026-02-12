@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Heavy3 Code Audit - Open Source
-Single model review via OpenRouter (default: Kimi K2.5)
+Single model review via OpenRouter (default: GLM 5)
 Sponsored by Heavy3.ai
 """
 
@@ -84,7 +84,7 @@ def retry_with_backoff(func, max_retries=MAX_RETRIES):
 # ============================================================================
 
 DEFAULT_CONFIG = {
-    "model": "moonshotai/kimi-k2.5",         # Default: Kimi K2.5 (best price/performance)
+    "model": "z-ai/glm-5",                    # Default: GLM 5 (best price/performance)
     "free_model": "nvidia/nemotron-3-nano-30b-a3b:free",  # Free tier (update as models rotate)
     "reasoning": "high",                     # Always high for thorough review
     "docs_folder": "documents",
@@ -102,6 +102,8 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # Pricing per 1M tokens (approximate, update as OpenRouter prices change)
 MODEL_PRICING = {
+    "z-ai/glm-5": {"input": 1.00, "output": 3.20},
+    "z-ai/glm-5:online": {"input": 1.00, "output": 3.20},
     "moonshotai/kimi-k2.5": {"input": 0.50, "output": 2.80},
     "moonshotai/kimi-k2.5:online": {"input": 0.50, "output": 2.80},
     "deepseek/deepseek-v3.2": {"input": 0.27, "output": 0.40},
@@ -604,9 +606,10 @@ def call_openrouter(config: dict, review_type: str, context: dict, stream: bool 
 MODEL_SHORTCUTS = {
     "gpt": "openai/gpt-5.2",
     "premium": "openai/gpt-5.2",
+    "glm": "z-ai/glm-5",
+    "standard": "z-ai/glm-5",
+    "std": "z-ai/glm-5",
     "kimi": "moonshotai/kimi-k2.5",
-    "standard": "moonshotai/kimi-k2.5",
-    "std": "moonshotai/kimi-k2.5",
     "deepseek": "deepseek/deepseek-v3.2",
     # "free" is handled specially in resolve_model() to read from config
 }

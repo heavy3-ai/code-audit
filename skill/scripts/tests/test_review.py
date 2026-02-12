@@ -65,7 +65,7 @@ class TestConfigLoading:
             config = load_config()
 
         # Note: tier is now in .env, not config.json
-        assert config["model"] == "moonshotai/kimi-k2.5"
+        assert config["model"] == "z-ai/glm-5"
         assert config["reasoning"] == "high"
 
     def test_load_config_missing_file_uses_defaults(self, tmp_path):
