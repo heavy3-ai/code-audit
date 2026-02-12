@@ -244,7 +244,7 @@ council_cost = (input_tokens * (1.75 + 2.00 + 3.00) + output_tokens * (14 + 12 +
 
 **IMPORTANT: Gather ALL context and save the temp JSON file FIRST, then calculate the cost estimate from the actual context size. This ensures an accurate estimate. The cost estimate is the ONLY user-facing prompt — do not interrupt the user for anything else.**
 
-After gathering context and saving to `/tmp/h3-context.json`, but BEFORE calling the review API:
+After gathering context and saving to the unique context file (`$H3_CONTEXT_FILE`), but BEFORE calling the review API:
 
 ```markdown
 ## Cost Estimate
@@ -405,11 +405,11 @@ After user selects grouping:
 6. Include related test files
 7. Find cross-file dependencies (see below)
 8. Include conversation context (see below)
-9. **Save context JSON to `/tmp/h3-context.json` using Bash** (see Temp File Handling — do NOT use the Write tool)
+9. **Generate a unique context file path and save context JSON using Bash** (see Temp File Handling — do NOT use the Write tool)
 10. **Calculate accurate cost estimate from the actual context size, display, and wait for user confirmation** (see Cost Estimation section)
 11. If user confirms, run review script immediately:
-    - Default: `python3 ~/.claude/skills/h3/scripts/review.py --type code --context-file /tmp/h3-context.json`
-    - With --council: `python3 ~/.claude/skills/h3/scripts/council.py --type code --context-file /tmp/h3-context.json`
+    - Default: `python3 ~/.claude/skills/h3/scripts/review.py --type code --context-file "$H3_CONTEXT_FILE"`
+    - With --council: `python3 ~/.claude/skills/h3/scripts/council.py --type code --context-file "$H3_CONTEXT_FILE"`
 
 ### Last Commit Review Workflow (`--commit`)
 
@@ -433,11 +433,11 @@ After user selects grouping:
       "date": "2025-01-25"
     }
     ```
-12. **Save context JSON to `/tmp/h3-context.json` using Bash** (see Temp File Handling)
+12. **Generate a unique context file path and save context JSON using Bash** (see Temp File Handling)
 13. **Calculate accurate cost estimate from the actual context size, display, and wait for user confirmation** (see Cost Estimation section)
 14. If user confirms, run review script immediately:
-    - Default: `python3 ~/.claude/skills/h3/scripts/review.py --type code --context-file /tmp/h3-context.json`
-    - With --council: `python3 ~/.claude/skills/h3/scripts/council.py --type code --context-file /tmp/h3-context.json`
+    - Default: `python3 ~/.claude/skills/h3/scripts/review.py --type code --context-file "$H3_CONTEXT_FILE"`
+    - With --council: `python3 ~/.claude/skills/h3/scripts/council.py --type code --context-file "$H3_CONTEXT_FILE"`
 
 ### Commit Range Review Workflow (`<range>` like `HEAD~3..HEAD`)
 
@@ -467,9 +467,9 @@ After user selects grouping:
       "total_commits": 2
     }
     ```
-13. **Save context JSON to `/tmp/h3-context.json` using Bash** (see Temp File Handling)
+13. **Generate a unique context file path and save context JSON using Bash** (see Temp File Handling)
 14. **Calculate accurate cost estimate from the actual context size, display, and wait for user confirmation** (see Cost Estimation section)
-15. If user confirms, run review script immediately (single model or council) with `--context-file /tmp/h3-context.json`
+15. If user confirms, run review script immediately (single model or council) with `--context-file "$H3_CONTEXT_FILE"`
 
 ### Plan Review Workflow (`plan <path>` or `<file>.md` or detected plan)
 
@@ -482,7 +482,7 @@ After user selects grouping:
 3. Parse plan for file paths and read those files into `file_contents`
 4. Find relevant documentation (CLAUDE.md, docs folder)
 5. Include conversation context (see below)
-6. **Save context JSON to `/tmp/h3-context.json` using Bash** (see Temp File Handling) with `plan_content` included:
+6. **Generate a unique context file path and save context JSON using Bash** (see Temp File Handling) with `plan_content` included:
    ```json
    {
      "review_type": "plan",
@@ -494,8 +494,8 @@ After user selects grouping:
    ```
 7. **Calculate accurate cost estimate from the actual context size, display, and wait for user confirmation** (see Cost Estimation section)
 8. If user confirms, run review script immediately:
-   - Default: `python3 ~/.claude/skills/h3/scripts/review.py --type plan --context-file /tmp/h3-context.json`
-   - With --council: `python3 ~/.claude/skills/h3/scripts/council.py --type plan --context-file /tmp/h3-context.json`
+   - Default: `python3 ~/.claude/skills/h3/scripts/review.py --type plan --context-file "$H3_CONTEXT_FILE"`
+   - With --council: `python3 ~/.claude/skills/h3/scripts/council.py --type plan --context-file "$H3_CONTEXT_FILE"`
 
 **IMPORTANT**: Do NOT pass `--plan-file` as a separate argument. The plan content MUST be included directly in the context JSON file under the `plan_content` key.
 
@@ -509,9 +509,9 @@ After user selects grouping:
 6. Include related test files
 7. Find cross-file dependencies (see below)
 8. Include conversation context (see below)
-9. **Save context JSON (with pr_metadata) to `/tmp/h3-context.json` using Bash** (see Temp File Handling)
+9. **Generate a unique context file path and save context JSON (with pr_metadata) using Bash** (see Temp File Handling)
 10. **Calculate accurate cost estimate from the actual context size, display, and wait for user confirmation** (see Cost Estimation section)
-11. If user confirms, run review script immediately (single model or council) with `--context-file /tmp/h3-context.json`
+11. If user confirms, run review script immediately (single model or council) with `--context-file "$H3_CONTEXT_FILE"`
 
 ---
 
@@ -631,10 +631,19 @@ For code and PR reviews, search for files that import or reference changed files
 
 **CRITICAL: Use Bash to write the context JSON — NEVER use the Write tool.**
 
-The context JSON must be saved to a temp file without triggering user permission prompts. Always use Bash:
+**CRITICAL: Use a UNIQUE filename per review session to prevent concurrent reviews from overwriting each other.**
+
+Generate a unique context file path at the start of each review using a timestamp and random suffix:
 
 ```bash
-cat > /tmp/h3-context.json << 'CONTEXT_EOF'
+H3_CONTEXT_FILE="/tmp/h3-context-$(date +%s)-$RANDOM.json"
+```
+
+Then use `$H3_CONTEXT_FILE` for all subsequent commands in that review session. Example:
+
+```bash
+H3_CONTEXT_FILE="/tmp/h3-context-$(date +%s)-$RANDOM.json"
+cat > "$H3_CONTEXT_FILE" << 'CONTEXT_EOF'
 {...the JSON...}
 CONTEXT_EOF
 ```
@@ -773,7 +782,7 @@ After presenting results and user makes a choice (or after any review completes)
 
 ## Important Guidelines
 
-- **Single confirmation only**: Gather all context and save the temp JSON file BEFORE showing the cost estimate. The cost estimate is the ONLY prompt requiring user input. Use Bash to write temp files to `/tmp/` — the Write tool is not available.
+- **Single confirmation only**: Gather all context and save the temp JSON file BEFORE showing the cost estimate. The cost estimate is the ONLY prompt requiring user input. Use Bash to write temp files to `/tmp/` with a unique name per session (see Temp File Handling) — the Write tool is not available.
 - **Be honest**: Disagree with reviewers when warranted
 - **Be specific**: Exact files and line numbers
 - **Don't auto-fix**: ALWAYS wait for user approval
