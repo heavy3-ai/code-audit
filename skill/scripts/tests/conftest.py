@@ -325,7 +325,7 @@ def council_all_success():
         {
             "role": "performance",
             "name": "Performance Critic",
-            "model": "google/gemini-3-pro-preview:online",
+            "model": "google/gemini-3.1-pro-preview:online",
             "content": "## Performance Assessment\nEfficient code.\n\n## Performance Issues\nNone.\n\n## Optimization Suggestions\n- Consider caching",
             "elapsed_ms": 2800,
             "tokens": {"input": 1500, "output": 180}
@@ -356,7 +356,7 @@ def council_one_failure():
         {
             "role": "performance",
             "name": "Performance Critic",
-            "model": "google/gemini-3-pro-preview:online",
+            "model": "google/gemini-3.1-pro-preview:online",
             "content": "## Performance Assessment\nEfficient code.",
             "elapsed_ms": 2800,
             "tokens": {"input": 1500, "output": 180}

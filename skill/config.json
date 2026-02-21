@@ -3,7 +3,7 @@
   "free_model": "nvidia/nemotron-3-nano-30b-a3b:free",
   "council_models": {
     "correctness": "openai/gpt-5.2",
-    "performance": "google/gemini-3-pro-preview",
+    "performance": "google/gemini-3.1-pro-preview",
     "security": "x-ai/grok-4"
   },
   "reasoning": "high",

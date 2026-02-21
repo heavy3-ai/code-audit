@@ -170,7 +170,7 @@ class TestCallReviewer:
 
         call_reviewer(
             role="security",
-            model="google/gemini-3-pro:online",
+            model="google/gemini-3.1-pro-preview:online",
             name="Security Analyst",
             user_message=user_message,
             review_type="code",

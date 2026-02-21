@@ -14,7 +14,7 @@ You are helping the user get AI-powered code reviews via OpenRouter.
 
 **All features are free and open source:**
 - Single model review with GLM 5 (best price/performance)
-- 3-model council with GPT 5.2 + Gemini 3 Pro + Grok 4
+- 3-model council with GPT 5.2 + Gemini 3.1 Pro + Grok 4
 - Web search integration
 - Up to 200K token context
 
@@ -33,7 +33,7 @@ You are helping the user get AI-powered code reviews via OpenRouter.
 - `--commit` - Force review of the last commit only
 
 **Mode options:**
-- `--council` - Use 3-model council (GPT 5.2 + Gemini 3 Pro + Grok 4)
+- `--council` - Use 3-model council (GPT 5.2 + Gemini 3.1 Pro + Grok 4)
 - `--free` - Use rotating free model from config
 - `--model <name>` - Override model (shortcuts: glm, gpt, kimi, deepseek, free)
 
@@ -223,7 +223,7 @@ OPENROUTER_API_KEY=your-key-here
 |-------|-------|--------|---------------------|
 | GLM 5 (default) | $1.00 | $3.20 | ~$0.008-0.02 |
 | GPT 5.2 (council) | $1.75 | $14.00 | ~$0.05-0.20 |
-| Gemini 3 Pro (council) | $2.00 | $12.00 | ~$0.05-0.18 |
+| Gemini 3.1 Pro (council) | $2.00 | $12.00 | ~$0.05-0.18 |
 | Grok 4 (council) | $3.00 | $15.00 | ~$0.06-0.22 |
 
 ### Estimation Formula

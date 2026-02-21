@@ -8,7 +8,7 @@ Edit `~/.claude/skills/h3/config.json` (or `%USERPROFILE%\.claude\skills\h3\conf
   "free_model": "nvidia/nemotron-3-nano-30b-a3b:free",
   "council_models": {
     "correctness": "openai/gpt-5.2",
-    "performance": "google/gemini-3-pro-preview",
+    "performance": "google/gemini-3.1-pro-preview",
     "security": "x-ai/grok-4"
   },
   "reasoning": "high",
@@ -24,7 +24,7 @@ Edit `~/.claude/skills/h3/config.json` (or `%USERPROFILE%\.claude\skills\h3\conf
 |--------|-------------|---------|
 | `model` | Model for single-model review | `z-ai/glm-5` |
 | `free_model` | Model for `--free` flag | `nvidia/nemotron-3-nano-30b-a3b:free` |
-| `council_models` | Models for council mode (see below) | GPT 5.2, Gemini 3 Pro, Grok 4 |
+| `council_models` | Models for council mode (see below) | GPT 5.2, Gemini 3.1 Pro, Grok 4 |
 | `reasoning` | Reasoning level (always `high` for code review) | `high` |
 | `docs_folder` | Where your project documentation lives | `documents` |
 | `max_context` | Token limit for reviews | `200000` |
@@ -52,7 +52,7 @@ Customize which models are used for each council role:
 {
   "council_models": {
     "correctness": "openai/gpt-5.2",
-    "performance": "google/gemini-3-pro-preview",
+    "performance": "google/gemini-3.1-pro-preview",
     "security": "x-ai/grok-4"
   }
 }
@@ -61,7 +61,7 @@ Customize which models are used for each council role:
 | Role | Default Model | Focus Area |
 |------|---------------|------------|
 | `correctness` | `openai/gpt-5.2` | Bugs, logic errors, edge cases, type safety |
-| `performance` | `google/gemini-3-pro-preview` | N+1 queries, memory leaks, scaling issues |
+| `performance` | `google/gemini-3.1-pro-preview` | N+1 queries, memory leaks, scaling issues |
 | `security` | `x-ai/grok-4` | Vulnerabilities, auth, injection, data exposure |
 
 **Notes:**
@@ -84,7 +84,7 @@ Customize which models are used for each council role:
 
 | Mode | Limit | Rationale |
 |------|-------|-----------|
-| **All modes** | 200K tokens | GPT 5.2 (400K), Gemini 3 Pro (1M), Grok 4 (256K), GLM 5 (202K) - 200K as balanced limit |
+| **All modes** | 200K tokens | GPT 5.2 (400K), Gemini 3.1 Pro (1M), Grok 4 (256K), GLM 5 (202K) - 200K as balanced limit |
 
 The context limit includes: diff + full file contents + documentation + test files. For very large PRs, the skill automatically breaks them into module-by-module reviews.
 
@@ -96,7 +96,7 @@ The context limit includes: diff + full file contents + documentation + test fil
 |------|-------|--------------|-------|-------|
 | **Single** | GLM 5 | `z-ai/glm-5` | ~$1.00/$3.20 per 1M | **DEFAULT** - Excellent quality |
 | **Free** | Nemotron Nano | `nvidia/nemotron-3-nano-30b-a3b:free` | $0.00 | Rotating free model |
-| **Council** | 3-Model Council | See `council_models` | ~$6.75/$41 per 1M | GPT 5.2 + Gemini 3 Pro + Grok 4 |
+| **Council** | 3-Model Council | See `council_models` | ~$6.75/$41 per 1M | GPT 5.2 + Gemini 3.1 Pro + Grok 4 |
 
 > The full `council.py` is in the public repo at `scripts/council.py`. You can read, audit, and modify it - it's MIT licensed. Council models are configurable via `council_models` in config.json.
 

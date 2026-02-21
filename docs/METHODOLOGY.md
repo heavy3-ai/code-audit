@@ -24,7 +24,7 @@ After council review, Claude synthesizes all findings into a **3-column comparis
 
 **Example output:**
 
-| Aspect | Correctness (GPT 5.2) | Performance (Gemini 3) | Security (Grok 4) |
+| Aspect | Correctness (GPT 5.2) | Performance (Gemini 3.1) | Security (Grok 4) |
 |--------|----------------------|----------------------|---------------------|
 | **Focus** | Bugs, Logic, Edge Cases | Scaling, Memory, N+1 | Vulnerabilities, Auth |
 | **Findings** | ❌ Null check missing | ⚠️ Potential N+1 query | ✅ No issues found |
@@ -52,7 +52,7 @@ Three specialized reviewers, each with web search:
 | Role | Model | Focus | Search |
 |------|-------|-------|--------|
 | **Correctness Expert** | GPT 5.2 | Bugs, logic errors, edge cases, race conditions | Bing |
-| **Performance Critic** | Gemini 3 Pro | N+1 queries, memory leaks, scaling bottlenecks | Exa |
+| **Performance Critic** | Gemini 3.1 Pro | N+1 queries, memory leaks, scaling bottlenecks | Exa |
 | **Security Analyst** | Grok 4 | Vulnerabilities, auth issues, data exposure | Exa |
 
 **Why Grok 4 for Security?**
@@ -72,7 +72,7 @@ The Kilo AI test specifically evaluated Grok 4 on prototype pollution, agentic A
 
 | Pillar | Implementation | Benefit |
 |--------|---------------|---------|
-| **Different Models** | GPT 5.2 + Gemini 3 Pro + Grok 4 | Different training data, different blind spots |
+| **Different Models** | GPT 5.2 + Gemini 3.1 Pro + Grok 4 | Different training data, different blind spots |
 | **Specialized Roles** | Correctness + Performance + Security | Forces comprehensive coverage |
 | **Different Search Sources** | Bing + Exa | Facts verified across independent indexes |
 
@@ -95,7 +95,7 @@ The Kilo AI test specifically evaluated Grok 4 on prototype pollution, agentic A
 | Model | Strength | Weakness |
 |-------|----------|----------|
 | GPT-5.2 | Cleanest control flow (22/MLOC) | 2x more concurrency bugs (470/MLOC) |
-| Gemini 3 Pro | Highest pass rate (81.7%) | 4x more control flow mistakes (200/MLOC) |
+| Gemini 3.1 Pro | Highest pass rate (81.7%) | 4x more control flow mistakes (200/MLOC) |
 | Opus 4.5 | Best overall accuracy | Lowest error rate (55/MLOC) |
 
 **The insight**: The probability of two different architectures hallucinating the *same* bug is significantly lower than one. Using 3 specialized models catches what any single model misses.
@@ -166,7 +166,7 @@ Even top-tier models have significant blind spots. Per million lines of generate
 | Model | Pass Rate | Weakness | Error Rate |
 |-------|-----------|----------|------------|
 | GPT-5.2 High | 80.66% | Concurrency errors | 470/MLOC (2x others) |
-| Gemini 3 Pro | 81.72% | Control flow mistakes | 200/MLOC (4x best) |
+| Gemini 3.1 Pro | 81.72% | Control flow mistakes | 200/MLOC (4x best) |
 | Claude Sonnet 4.5 | ~77% | Resource management leaks | 195/MLOC |
 | Opus 4.5 Thinking | Best pass rate | Control flow | 55/MLOC (lowest) |
 
@@ -195,7 +195,7 @@ Heavy3 Code Audit uniquely offers **pre-implementation validation**:
 |-------------|-------|---------------|
 | **Architecture Design** | Patterns, SOLID, separation of concerns | Design Expert (GPT 5.2) |
 | **Plan Feasibility** | Is this approach realistic? What are the risks? | All three reviewers |
-| **Scalability Assessment** | Will this scale? What are the bottlenecks? | Scalability Analyst (Gemini 3 Pro) |
+| **Scalability Assessment** | Will this scale? What are the bottlenecks? | Scalability Analyst (Gemini 3.1 Pro) |
 | **Security Architecture** | Threat model, attack surface, auth design | Security Architect (Grok 4) |
 
 **Why this matters for AI-assisted coding (vibe coding):**
