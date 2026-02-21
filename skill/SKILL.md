@@ -673,7 +673,7 @@ For council reviews, YOU (Claude) MUST synthesize with a comparison table showin
 
 ### Comparison of All Three Reviews
 
-| Aspect | Correctness (GPT 5.2) | Performance (Gemini 3) | Security (Grok 4) |
+| Aspect | Correctness (GPT 5.2) | Performance (Gemini 3.1) | Security (Grok 4) |
 |--------|----------------------|----------------------|---------------------|
 | **Focus** | Bugs, Logic, Edge Cases | Scaling, Memory, N+1 | Vulnerabilities, Auth |
 | **Findings** | ❌ 1 bug: null check missing | ⚠️ Potential N+1 query | ✅ No XSS, SQL injection |
