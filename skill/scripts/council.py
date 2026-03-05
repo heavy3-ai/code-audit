@@ -438,10 +438,10 @@ def call_reviewer(role: str, model: str, name: str, user_message: str,
                 "output": result.get("usage", {}).get("completion_tokens", 0),
             }
         }
-    except requests.exceptions.HTTPError as e:
-        # 413: context too large — retry once without search plugin
-        if "plugins" in payload and hasattr(e, 'response') and e.response is not None and e.response.status_code == 413:
-            print(f"[{name}] 413 too large — retrying without search plugin", file=sys.stderr)
+    except Exception as e:
+        # On any error with search plugin enabled, retry once without it
+        if "plugins" in payload:
+            print(f"[{name}] Error with search — retrying without search plugin", file=sys.stderr)
             payload.pop("plugins")
             try:
                 resp = retry_with_backoff(make_request, role_name=name)
@@ -460,15 +460,6 @@ def call_reviewer(role: str, model: str, name: str, user_message: str,
                 }
             except Exception as e2:
                 e = e2  # fall through to error return
-        return {
-            "role": role,
-            "name": name,
-            "model": model,
-            "content": f"ERROR: {str(e)} (after {MAX_RETRIES} retries)",
-            "elapsed_ms": int((time.time() - start) * 1000),
-            "error": str(e)
-        }
-    except Exception as e:
         return {
             "role": role,
             "name": name,

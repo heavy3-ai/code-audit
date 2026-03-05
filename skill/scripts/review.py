@@ -557,9 +557,8 @@ def call_openrouter(config: dict, review_type: str, context: dict, stream: bool 
         response.raise_for_status()
         return response
 
-    try:
-        response = retry_with_backoff(make_request)
-
+    def process_response(response):
+        """Process API response (streaming or blocking). Returns content string."""
         if stream:
             # Handle streaming response (SSE format)
             full_content = []
@@ -580,7 +579,6 @@ def call_openrouter(config: dict, review_type: str, context: dict, stream: bool 
                                 full_content.append(content)
                         except json.JSONDecodeError as e:
                             malformed_count += 1
-                            # Log malformed chunks for debugging (to stderr)
                             logger.debug(f"Skipping malformed SSE chunk: {data_str[:100]}... ({e})")
             print()  # Final newline
             if malformed_count > 0:
@@ -591,18 +589,36 @@ def call_openrouter(config: dict, review_type: str, context: dict, stream: bool 
             result = response.json()
             return extract_content(result)
 
-    except requests.exceptions.Timeout:
-        return "ERROR: Request timed out after retries. The model may be overloaded. Try again later."
-    except requests.exceptions.HTTPError as e:
-        error_detail = ""
-        try:
-            if hasattr(e, 'response') and e.response is not None:
-                error_detail = e.response.json().get("error", {}).get("message", "")
-        except (json.JSONDecodeError, KeyError, TypeError):
-            pass
-        return f"ERROR: API request failed: {e}\n{error_detail}"
-    except Exception as e:
-        return f"ERROR: Unexpected error: {e}"
+    try:
+        response = retry_with_backoff(make_request)
+        return process_response(response)
+
+    except Exception as first_error:
+        # On any error with web search enabled, retry once without it
+        if enable_web_search:
+            print("Retrying without web search plugin...", file=sys.stderr)
+            if payload["model"].endswith(":online"):
+                payload["model"] = payload["model"].replace(":online", "")
+            payload.pop("plugins", None)
+            try:
+                response = retry_with_backoff(make_request)
+                return process_response(response)
+            except Exception:
+                pass  # Fall through to return original error
+
+        # Format the original error for return
+        if isinstance(first_error, requests.exceptions.Timeout):
+            return "ERROR: Request timed out after retries. The model may be overloaded. Try again later."
+        elif isinstance(first_error, requests.exceptions.HTTPError):
+            error_detail = ""
+            try:
+                if hasattr(first_error, 'response') and first_error.response is not None:
+                    error_detail = first_error.response.json().get("error", {}).get("message", "")
+            except (json.JSONDecodeError, KeyError, TypeError):
+                pass
+            return f"ERROR: API request failed: {first_error}\n{error_detail}"
+        else:
+            return f"ERROR: Unexpected error: {first_error}"
 
 
 MODEL_SHORTCUTS = {
