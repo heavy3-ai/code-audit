@@ -127,7 +127,7 @@ python -m pytest tests/ -v --tb=short
 |----|------|---------|----------------|---|
 | M1 | Shortcut: glm | `/h3 --model glm` | z-ai/glm-5 | ☐ |
 | M1b | Shortcut: kimi | `/h3 --model kimi` | moonshotai/kimi-k2.5 | ☐ |
-| M2 | Shortcut: gpt | `/h3 --model gpt` | openai/gpt-5.2 | ☐ |
+| M2 | Shortcut: gpt | `/h3 --model gpt` | openai/gpt-5.4 | ☐ |
 | M3 | Shortcut: deepseek | `/h3 --model deepseek` | deepseek/deepseek-v3.2 | ☐ |
 | M4 | Shortcut: free | `/h3 --model free` | Config free_model | ☐ |
 | M5 | Full slug | `/h3 --model anthropic/claude-3-haiku` | Exact model | ☐ |

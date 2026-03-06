@@ -107,6 +107,8 @@ MODEL_PRICING = {
     "moonshotai/kimi-k2.5": {"input": 0.50, "output": 2.80},
     "moonshotai/kimi-k2.5:online": {"input": 0.50, "output": 2.80},
     "deepseek/deepseek-v3.2": {"input": 0.27, "output": 0.40},
+    "openai/gpt-5.4": {"input": 2.50, "output": 15.00},
+    "openai/gpt-5.4:online": {"input": 2.50, "output": 15.00},
     "openai/gpt-5.2": {"input": 1.75, "output": 14.00},
     "openai/gpt-5.2:online": {"input": 1.75, "output": 14.00},
     "google/gemini-3-pro-preview": {"input": 2.00, "output": 12.00},
@@ -622,8 +624,8 @@ def call_openrouter(config: dict, review_type: str, context: dict, stream: bool 
 
 
 MODEL_SHORTCUTS = {
-    "gpt": "openai/gpt-5.2",
-    "premium": "openai/gpt-5.2",
+    "gpt": "openai/gpt-5.4",
+    "premium": "openai/gpt-5.4",
     "glm": "z-ai/glm-5",
     "standard": "z-ai/glm-5",
     "std": "z-ai/glm-5",

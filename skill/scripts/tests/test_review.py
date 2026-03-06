@@ -105,10 +105,10 @@ class TestModelResolution:
     """Tests for model shortcut resolution."""
 
     def test_resolve_gpt_shortcut(self, temp_config):
-        """Verify 'gpt' resolves to GPT 5.2."""
+        """Verify 'gpt' resolves to GPT 5.4."""
         _, config = temp_config
         model = resolve_model("gpt", config)
-        assert model == "openai/gpt-5.2"
+        assert model == "openai/gpt-5.4"
 
     def test_resolve_deepseek_shortcut(self, temp_config):
         """Verify 'deepseek' resolves to DeepSeek V3.2."""
@@ -137,8 +137,8 @@ class TestModelResolution:
     def test_resolve_case_insensitive(self, temp_config):
         """Verify shortcuts are case-insensitive."""
         _, config = temp_config
-        assert resolve_model("GPT", config) == "openai/gpt-5.2"
-        assert resolve_model("Gpt", config) == "openai/gpt-5.2"
+        assert resolve_model("GPT", config) == "openai/gpt-5.4"
+        assert resolve_model("Gpt", config) == "openai/gpt-5.4"
         assert resolve_model("DEEPSEEK", config) == "deepseek/deepseek-v3.2"
 
 
@@ -239,7 +239,7 @@ class TestOpenRouterAPICall:
             status=200
         )
 
-        config = {**DEFAULT_CONFIG, "model": "openai/gpt-5.2", "reasoning": "high"}
+        config = {**DEFAULT_CONFIG, "model": "openai/gpt-5.4", "reasoning": "high"}
         call_openrouter(config, "code", sample_code_context, stream=False)
 
         request = responses.calls[0].request
@@ -428,7 +428,7 @@ class TestCostEstimation:
 
     def test_estimate_cost_gpt(self):
         """Estimate cost for GPT model."""
-        result = estimate_cost("openai/gpt-5.2", 40000, 2500)
+        result = estimate_cost("openai/gpt-5.4", 40000, 2500)
 
         # GPT: $1.75/M input, $14.00/M output
         assert abs(result["input_cost"] - 0.0175) < 0.0001
@@ -436,10 +436,10 @@ class TestCostEstimation:
 
     def test_estimate_cost_online_suffix_stripped(self):
         """Online suffix stripped for pricing lookup."""
-        result = estimate_cost("openai/gpt-5.2:online", 40000, 2500)
+        result = estimate_cost("openai/gpt-5.4:online", 40000, 2500)
 
         # Should use same pricing as without :online
-        assert result["model"] == "openai/gpt-5.2:online"
+        assert result["model"] == "openai/gpt-5.4:online"
         assert abs(result["input_cost"] - 0.0175) < 0.0001
 
     def test_estimate_cost_free_model(self):
@@ -492,10 +492,10 @@ class TestFormatCostEstimate:
             "input_cost": 0.01,
             "output_cost": 0.035,
             "total_cost": 0.045,
-            "model": "openai/gpt-5.2"
+            "model": "openai/gpt-5.4"
         }
         result = format_cost_estimate(estimate)
 
-        assert "openai/gpt-5.2" in result
+        assert "openai/gpt-5.4" in result
 
 

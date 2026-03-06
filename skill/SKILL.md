@@ -14,7 +14,7 @@ You are helping the user get AI-powered code reviews via OpenRouter.
 
 **All features are free and open source:**
 - Single model review with GLM 5 (best price/performance)
-- 3-model council with GPT 5.2 + Gemini 3.1 Pro + Grok 4
+- 3-model council with GPT 5.4 + Gemini 3.1 Pro + Grok 4
 - Web search integration
 - Up to 200K token context
 
@@ -33,7 +33,7 @@ You are helping the user get AI-powered code reviews via OpenRouter.
 - `--commit` - Force review of the last commit only
 
 **Mode options:**
-- `--council` - Use 3-model council (GPT 5.2 + Gemini 3.1 Pro + Grok 4)
+- `--council` - Use 3-model council (GPT 5.4 + Gemini 3.1 Pro + Grok 4)
 - `--free` - Use rotating free model from config
 - `--model <name>` - Override model (shortcuts: glm, gpt, kimi, deepseek, free)
 
@@ -222,7 +222,7 @@ OPENROUTER_API_KEY=your-key-here
 | Model | Input | Output | Typical Review Cost |
 |-------|-------|--------|---------------------|
 | GLM 5 (default) | $1.00 | $3.20 | ~$0.008-0.02 |
-| GPT 5.2 (council) | $1.75 | $14.00 | ~$0.05-0.20 |
+| GPT 5.4 (council) | $2.50 | $15.00 | ~$0.05-0.20 |
 | Gemini 3.1 Pro (council) | $2.00 | $12.00 | ~$0.05-0.18 |
 | Grok 4 (council) | $3.00 | $15.00 | ~$0.06-0.22 |
 
@@ -236,8 +236,8 @@ output_tokens = ~2500 (typical review length)
 single_cost = (input_tokens * 1.00 + output_tokens * 3.20) / 1_000_000
 
 # Council mode (all 3 models in parallel)
-council_cost = (input_tokens * (1.75 + 2.00 + 3.00) + output_tokens * (14 + 12 + 15)) / 1_000_000
-             ≈ input_tokens * 6.75/M + output_tokens * 41/M
+council_cost = (input_tokens * (2.50 + 2.00 + 3.00) + output_tokens * (15 + 12 + 15)) / 1_000_000
+             ≈ input_tokens * 7.50/M + output_tokens * 42/M
 ```
 
 ### Display Cost Estimate and Confirm
@@ -673,7 +673,7 @@ For council reviews, YOU (Claude) MUST synthesize with a comparison table showin
 
 ### Comparison of All Three Reviews
 
-| Aspect | Correctness (GPT 5.2) | Performance (Gemini 3.1) | Security (Grok 4) |
+| Aspect | Correctness (GPT 5.4) | Performance (Gemini 3.1) | Security (Grok 4) |
 |--------|----------------------|----------------------|---------------------|
 | **Focus** | Bugs, Logic, Edge Cases | Scaling, Memory, N+1 | Vulnerabilities, Auth |
 | **Findings** | ❌ 1 bug: null check missing | ⚠️ Potential N+1 query | ✅ No XSS, SQL injection |

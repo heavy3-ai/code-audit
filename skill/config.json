@@ -2,7 +2,7 @@
   "model": "z-ai/glm-5",
   "free_model": "nvidia/nemotron-3-nano-30b-a3b:free",
   "council_models": {
-    "correctness": "openai/gpt-5.2",
+    "correctness": "openai/gpt-5.4",
     "performance": "google/gemini-3.1-pro-preview",
     "security": "x-ai/grok-4"
   },
