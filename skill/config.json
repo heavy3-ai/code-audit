@@ -4,7 +4,7 @@
   "council_models": {
     "correctness": "openai/gpt-5.4",
     "performance": "google/gemini-3.1-pro-preview",
-    "security": "x-ai/grok-4"
+    "security": "x-ai/grok-4.20-beta"
   },
   "reasoning": "high",
   "docs_folder": "documents",

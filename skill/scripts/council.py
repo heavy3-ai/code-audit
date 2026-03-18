@@ -75,7 +75,7 @@ def retry_with_backoff(func, role_name="API", max_retries=MAX_RETRIES):
 DEFAULT_COUNCIL_MODELS = {
     "correctness": "openai/gpt-5.4",
     "performance": "google/gemini-3.1-pro-preview",
-    "security": "x-ai/grok-4",
+    "security": "x-ai/grok-4.20-beta",
 }
 
 CODE_PROMPTS = {

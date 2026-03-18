@@ -317,7 +317,7 @@ def council_all_success():
         {
             "role": "security",
             "name": "Security Analyst",
-            "model": "x-ai/grok-4:online",
+            "model": "x-ai/grok-4.20-beta:online",
             "content": "## Security Assessment\nNo vulnerabilities.\n\n## Vulnerabilities Found\nNone.\n\n## Security Recommendations\n- Add input sanitization",
             "elapsed_ms": 3000,
             "tokens": {"input": 1500, "output": 220}
@@ -348,7 +348,7 @@ def council_one_failure():
         {
             "role": "security",
             "name": "Security Analyst",
-            "model": "x-ai/grok-4:online",
+            "model": "x-ai/grok-4.20-beta:online",
             "content": "ERROR: Request timed out (after 3 retries)",
             "elapsed_ms": 180000,
             "error": "Request timed out"

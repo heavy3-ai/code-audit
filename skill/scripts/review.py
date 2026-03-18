@@ -115,6 +115,8 @@ MODEL_PRICING = {
     "google/gemini-3-pro-preview:online": {"input": 2.00, "output": 12.00},
     "google/gemini-3.1-pro-preview": {"input": 2.00, "output": 12.00},
     "google/gemini-3.1-pro-preview:online": {"input": 2.00, "output": 12.00},
+    "x-ai/grok-4.20-beta": {"input": 2.00, "output": 6.00},
+    "x-ai/grok-4.20-beta:online": {"input": 2.00, "output": 6.00},
     "x-ai/grok-4": {"input": 3.00, "output": 15.00},
     "x-ai/grok-4:online": {"input": 3.00, "output": 15.00},
     "nvidia/nemotron-3-nano-30b-a3b:free": {"input": 0.0, "output": 0.0},

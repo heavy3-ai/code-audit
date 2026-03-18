@@ -9,7 +9,7 @@ Edit `~/.claude/skills/h3/config.json` (or `%USERPROFILE%\.claude\skills\h3\conf
   "council_models": {
     "correctness": "openai/gpt-5.4",
     "performance": "google/gemini-3.1-pro-preview",
-    "security": "x-ai/grok-4"
+    "security": "x-ai/grok-4.20-beta"
   },
   "reasoning": "high",
   "docs_folder": "documents",
@@ -24,7 +24,7 @@ Edit `~/.claude/skills/h3/config.json` (or `%USERPROFILE%\.claude\skills\h3\conf
 |--------|-------------|---------|
 | `model` | Model for single-model review | `z-ai/glm-5` |
 | `free_model` | Model for `--free` flag | `nvidia/nemotron-3-nano-30b-a3b:free` |
-| `council_models` | Models for council mode (see below) | GPT 5.4, Gemini 3.1 Pro, Grok 4 |
+| `council_models` | Models for council mode (see below) | GPT 5.4, Gemini 3.1 Pro, Grok 4.2 |
 | `reasoning` | Reasoning level (always `high` for code review) | `high` |
 | `docs_folder` | Where your project documentation lives | `documents` |
 | `max_context` | Token limit for reviews | `200000` |
@@ -53,7 +53,7 @@ Customize which models are used for each council role:
   "council_models": {
     "correctness": "openai/gpt-5.4",
     "performance": "google/gemini-3.1-pro-preview",
-    "security": "x-ai/grok-4"
+    "security": "x-ai/grok-4.20-beta"
   }
 }
 ```
@@ -62,7 +62,7 @@ Customize which models are used for each council role:
 |------|---------------|------------|
 | `correctness` | `openai/gpt-5.4` | Bugs, logic errors, edge cases, type safety |
 | `performance` | `google/gemini-3.1-pro-preview` | N+1 queries, memory leaks, scaling issues |
-| `security` | `x-ai/grok-4` | Vulnerabilities, auth, injection, data exposure |
+| `security` | `x-ai/grok-4.20-beta` | Vulnerabilities, auth, injection, data exposure |
 
 **Notes:**
 - You can override individual roles (unspecified roles use defaults)
