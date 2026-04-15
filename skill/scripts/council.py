@@ -242,11 +242,28 @@ def get_skill_dir():
 
 def load_config():
     config_path = get_skill_dir() / 'config.json'
-    default = {"reasoning": "high", "max_context": 200000, "max_output_tokens": 32768}
+    default = {"reasoning": "high", "max_context": 500000, "max_output_tokens": 32768}
     if config_path.exists():
         with open(config_path) as f:
             return {**default, **json.load(f)}
     return default
+
+
+def get_max_context(config: dict, model: str) -> int:
+    """Lookup per-model char budget, falling back to config['max_context'].
+
+    Resolution order: exact model match → strip :online/:free suffix → prefix match → fallback.
+    """
+    by_model = config.get("max_context_by_model") or {}
+    if model in by_model:
+        return by_model[model]
+    base = model.split(":", 1)[0]
+    if base in by_model:
+        return by_model[base]
+    for key, value in by_model.items():
+        if model.startswith(key):
+            return value
+    return config.get("max_context", 500000)
 
 
 def load_dotenv():
@@ -393,7 +410,7 @@ def call_reviewer(role: str, model: str, name: str, user_message: str,
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}
         ],
-        "max_output_tokens": max_output_tokens,
+        "max_tokens": max_output_tokens,
     }
 
     # OpenRouter server-side compression for all models.
@@ -543,10 +560,12 @@ def run_council(context: dict, review_type: str) -> dict:
 
     user_message = build_user_message(context, review_type)
 
-    # 200K context limit
-    max_context = config.get("max_context", 200000)
-    if len(user_message) > max_context:
-        user_message = user_message[:max_context] + "\n\n[... truncated ...]"
+    # Per-model char budget: each reviewer gets its own truncation based on its context window
+    def truncate_for(model: str) -> str:
+        limit = get_max_context(config, model)
+        if len(user_message) > limit:
+            return user_message[:limit] + "\n\n[... truncated ...]"
+        return user_message
 
     start = time.time()
     reviews = []
@@ -567,7 +586,7 @@ def run_council(context: dict, review_type: str) -> dict:
                 member["role"],
                 member["model"],
                 member["name"],
-                user_message,
+                truncate_for(member["model"]),
                 review_type,
                 api_key,
                 reasoning,

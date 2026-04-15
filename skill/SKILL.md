@@ -148,8 +148,8 @@ Read the config from: `~/.claude/skills/h3/config.json`
   "free_model": "nvidia/nemotron-3-nano-30b-a3b:free",
   "reasoning": "high",
   "docs_folder": "documents",
-  "max_context": 200000,
-  "enable_web_search": true
+  "max_context": 500000,
+  "enable_web_search": false
 }
 ```
 
