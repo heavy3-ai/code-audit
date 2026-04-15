@@ -89,9 +89,9 @@ DEFAULT_CONFIG = {
     "reasoning": "high",                     # Always high for thorough review
     "docs_folder": "documents",
     "max_file_size": 50000,
-    "max_context": 200000,                   # 200K context limit
+    "max_context": 500000,                   # Default char budget (per-model overrides in config max_context_by_model)
     "max_output_tokens": 32768,             # Output cap per reviewer (32K: ample for reasoning + content)
-    "enable_web_search": True                # Web search enabled by default
+    "enable_web_search": False               # Disabled by default: OpenRouter :online+Exa returns HTTP 500 on large contexts
 }
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -124,6 +124,23 @@ MODEL_PRICING = {
 
 # Default pricing for unknown models
 DEFAULT_PRICING = {"input": 0.50, "output": 1.00}
+
+
+def get_max_context(config: dict, model: str) -> int:
+    """Lookup per-model char budget, falling back to config['max_context'].
+
+    Resolution order: exact model match → strip :online/:free suffix → prefix match → fallback.
+    """
+    by_model = config.get("max_context_by_model") or {}
+    if model in by_model:
+        return by_model[model]
+    base = model.split(":", 1)[0]
+    if base in by_model:
+        return by_model[base]
+    for key, value in by_model.items():
+        if model.startswith(key):
+            return value
+    return config.get("max_context", 500000)
 
 
 def estimate_cost(model: str, input_chars: int, est_output_tokens: int = 2500) -> dict:
@@ -499,13 +516,14 @@ def call_openrouter(config: dict, review_type: str, context: dict, stream: bool 
     system_prompt = get_system_prompt(review_type)
     user_message = build_user_message(context, review_type)
 
-    # Truncate if too long (200K limit)
-    max_context = config.get("max_context", 200000)
+    # Determine model to use (with optional :online suffix for web search)
+    model = config["model"]
+
+    # Truncate if too long (per-model char budget, falls back to config.max_context)
+    max_context = get_max_context(config, model)
     if len(user_message) > max_context:
         user_message = user_message[:max_context] + "\n\n[... truncated due to length ...]"
 
-    # Determine model to use (with optional :online suffix for web search)
-    model = config["model"]
     enable_web_search = config.get("enable_web_search", True)
 
     if enable_web_search:
@@ -521,7 +539,7 @@ def call_openrouter(config: dict, review_type: str, context: dict, stream: bool 
             {"role": "user", "content": user_message}
         ],
         "stream": stream,
-        "max_output_tokens": max_output_tokens,
+        "max_tokens": max_output_tokens,
     }
 
     # OpenRouter server-side compression for all models.
