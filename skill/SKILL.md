@@ -13,8 +13,8 @@ disable-model-invocation: true
 You are helping the user get AI-powered code reviews via OpenRouter.
 
 **All features are free and open source:**
-- Single model review with GLM 5 (best price/performance)
-- 3-model council with GPT 5.4 + Gemini 3.1 Pro + Grok 4
+- Single model review with DeepSeek V4 Pro (strong reasoning at low cost)
+- 3-model council with GPT 5.5 + Gemini 3.1 Pro + Grok 4
 - Web search integration
 - Up to 200K token context
 
@@ -33,7 +33,7 @@ You are helping the user get AI-powered code reviews via OpenRouter.
 - `--commit` - Force review of the last commit only
 
 **Mode options:**
-- `--council` - Use 3-model council (GPT 5.4 + Gemini 3.1 Pro + Grok 4)
+- `--council` - Use 3-model council (GPT 5.5 + Gemini 3.1 Pro + Grok 4)
 - `--free` - Use rotating free model from config
 - `--model <name>` - Override model (shortcuts: glm, gpt, kimi, deepseek, free)
 
@@ -144,8 +144,13 @@ When user specifies a range, show commit summary before the review:
 Read the config from: `~/.claude/skills/h3/config.json`
 ```json
 {
-  "model": "z-ai/glm-5",
+  "model": "deepseek/deepseek-v4-pro",
   "free_model": "nvidia/nemotron-3-nano-30b-a3b:free",
+  "council_models": {
+    "correctness": "openai/gpt-5.5",
+    "performance": "google/gemini-3.1-pro-preview",
+    "security": "x-ai/grok-4.20-beta"
+  },
   "reasoning": "high",
   "docs_folder": "documents",
   "max_context": 500000,
@@ -221,10 +226,10 @@ OPENROUTER_API_KEY=your-key-here
 
 | Model | Input | Output | Typical Review Cost |
 |-------|-------|--------|---------------------|
-| GLM 5 (default) | $1.00 | $3.20 | ~$0.008-0.02 |
-| GPT 5.4 (council) | $2.50 | $15.00 | ~$0.05-0.20 |
+| DeepSeek V4 Pro (default) | $0.435 | $0.87 | ~$0.002-0.008 |
+| GPT 5.5 (council) | $5.00 | $30.00 | ~$0.10-0.40 |
 | Gemini 3.1 Pro (council) | $2.00 | $12.00 | ~$0.05-0.18 |
-| Grok 4 (council) | $3.00 | $15.00 | ~$0.06-0.22 |
+| Grok 4.2 (council) | $2.00 | $6.00 | ~$0.04-0.12 |
 
 ### Estimation Formula
 
@@ -232,12 +237,12 @@ OPENROUTER_API_KEY=your-key-here
 input_tokens = total_context_chars / 4
 output_tokens = ~2500 (typical review length)
 
-# Single model mode (GLM 5)
-single_cost = (input_tokens * 1.00 + output_tokens * 3.20) / 1_000_000
+# Single model mode (DeepSeek V4 Pro)
+single_cost = (input_tokens * 0.435 + output_tokens * 0.87) / 1_000_000
 
-# Council mode (all 3 models in parallel)
-council_cost = (input_tokens * (2.50 + 2.00 + 3.00) + output_tokens * (15 + 12 + 15)) / 1_000_000
-             ≈ input_tokens * 7.50/M + output_tokens * 42/M
+# Council mode (all 3 models in parallel: GPT 5.5 + Gemini 3.1 Pro + Grok 4.2)
+council_cost = (input_tokens * (5.00 + 2.00 + 2.00) + output_tokens * (30 + 12 + 6)) / 1_000_000
+             ≈ input_tokens * 9.00/M + output_tokens * 48/M
 ```
 
 ### Display Cost Estimate and Confirm
@@ -264,9 +269,9 @@ After gathering context and saving to the unique context file (`$H3_CONTEXT_FILE
 If user declines, exit gracefully: "Review cancelled."
 
 **Examples:**
-- Small review (10K chars / 2.5K tokens): Single ~$0.002, Council ~$0.12
-- Medium review (50K chars / 12.5K tokens): Single ~$0.004, Council ~$0.19
-- Large review (200K chars / 50K tokens): Single ~$0.015, Council ~$0.44
+- Small review (10K chars / 2.5K tokens): Single ~$0.003, Council ~$0.14
+- Medium review (50K chars / 12.5K tokens): Single ~$0.008, Council ~$0.23
+- Large review (200K chars / 50K tokens): Single ~$0.024, Council ~$0.57
 
 ---
 
@@ -673,7 +678,7 @@ For council reviews, YOU (Claude) MUST synthesize with a comparison table showin
 
 ### Comparison of All Three Reviews
 
-| Aspect | Correctness (GPT 5.4) | Performance (Gemini 3.1) | Security (Grok 4) |
+| Aspect | Correctness (GPT 5.5) | Performance (Gemini 3.1) | Security (Grok 4) |
 |--------|----------------------|----------------------|---------------------|
 | **Focus** | Bugs, Logic, Edge Cases | Scaling, Memory, N+1 | Vulnerabilities, Auth |
 | **Findings** | ❌ 1 bug: null check missing | ⚠️ Potential N+1 query | ✅ No XSS, SQL injection |

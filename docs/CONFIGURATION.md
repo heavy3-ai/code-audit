@@ -4,10 +4,10 @@ Edit `~/.claude/skills/h3/config.json` (or `%USERPROFILE%\.claude\skills\h3\conf
 
 ```json
 {
-  "model": "z-ai/glm-5",
+  "model": "deepseek/deepseek-v4-pro",
   "free_model": "nvidia/nemotron-3-nano-30b-a3b:free",
   "council_models": {
-    "correctness": "openai/gpt-5.4",
+    "correctness": "openai/gpt-5.5",
     "performance": "google/gemini-3.1-pro-preview",
     "security": "x-ai/grok-4.20-beta"
   },
@@ -22,9 +22,9 @@ Edit `~/.claude/skills/h3/config.json` (or `%USERPROFILE%\.claude\skills\h3\conf
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `model` | Model for single-model review | `z-ai/glm-5` |
+| `model` | Model for single-model review | `deepseek/deepseek-v4-pro` |
 | `free_model` | Model for `--free` flag | `nvidia/nemotron-3-nano-30b-a3b:free` |
-| `council_models` | Models for council mode (see below) | GPT 5.4, Gemini 3.1 Pro, Grok 4.2 |
+| `council_models` | Models for council mode (see below) | GPT 5.5, Gemini 3.1 Pro, Grok 4.2 |
 | `reasoning` | Reasoning level (always `high` for code review) | `high` |
 | `docs_folder` | Where your project documentation lives | `documents` |
 | `max_context` | Token limit for reviews | `200000` |
@@ -51,7 +51,7 @@ Customize which models are used for each council role:
 ```json
 {
   "council_models": {
-    "correctness": "openai/gpt-5.4",
+    "correctness": "openai/gpt-5.5",
     "performance": "google/gemini-3.1-pro-preview",
     "security": "x-ai/grok-4.20-beta"
   }
@@ -60,7 +60,7 @@ Customize which models are used for each council role:
 
 | Role | Default Model | Focus Area |
 |------|---------------|------------|
-| `correctness` | `openai/gpt-5.4` | Bugs, logic errors, edge cases, type safety |
+| `correctness` | `openai/gpt-5.5` | Bugs, logic errors, edge cases, type safety |
 | `performance` | `google/gemini-3.1-pro-preview` | N+1 queries, memory leaks, scaling issues |
 | `security` | `x-ai/grok-4.20-beta` | Vulnerabilities, auth, injection, data exposure |
 
@@ -84,7 +84,7 @@ Customize which models are used for each council role:
 
 | Mode | Limit | Rationale |
 |------|-------|-----------|
-| **All modes** | 200K tokens | GPT 5.4 (400K), Gemini 3.1 Pro (1M), Grok 4 (256K), GLM 5 (202K) - 200K as balanced limit |
+| **All modes** | 200K tokens | GPT 5.5 (200K), Gemini 3.1 Pro (1M), Grok 4 (256K), DeepSeek V4 Pro (1M) - 200K matches GPT 5.5's window without hitting its surcharge tier |
 
 The context limit includes: diff + full file contents + documentation + test files. For very large PRs, the skill automatically breaks them into module-by-module reviews.
 
@@ -94,9 +94,9 @@ The context limit includes: diff + full file contents + documentation + test fil
 
 | Mode | Model | Config Value | Price | Notes |
 |------|-------|--------------|-------|-------|
-| **Single** | GLM 5 | `z-ai/glm-5` | ~$1.00/$3.20 per 1M | **DEFAULT** - Excellent quality |
+| **Single** | DeepSeek V4 Pro | `deepseek/deepseek-v4-pro` | ~$0.435/$0.87 per 1M | **DEFAULT** - Strong reasoning at low cost |
 | **Free** | Nemotron Nano | `nvidia/nemotron-3-nano-30b-a3b:free` | $0.00 | Rotating free model |
-| **Council** | 3-Model Council | See `council_models` | ~$6.75/$41 per 1M | GPT 5.4 + Gemini 3.1 Pro + Grok 4 |
+| **Council** | 3-Model Council | See `council_models` | ~$9.00/$48 per 1M | GPT 5.5 + Gemini 3.1 Pro + Grok 4.2 |
 
 > The full `council.py` is in the public repo at `scripts/council.py`. You can read, audit, and modify it - it's MIT licensed. Council models are configurable via `council_models` in config.json.
 
@@ -139,10 +139,10 @@ For a typical small code review (~10K chars / ~2.5K tokens input):
 
 | Mode | Estimated Cost | Quality |
 |------|---------------|---------|
-| **Single** (GLM 5) | ~$0.01 | Excellent |
+| **Single** (DeepSeek V4 Pro) | ~$0.005 | Excellent |
 | **Free** | $0.00 | Very good |
-| **Council** (3-Model) | ~$0.12 | Best (multi-perspective) |
+| **Council** (3-Model) | ~$0.14 | Best (multi-perspective) |
 
-For a larger review (~50K chars / ~12.5K tokens input): Single ~$0.01, Council ~$0.19
+For a larger review (~50K chars / ~12.5K tokens input): Single ~$0.008, Council ~$0.23
 
-**Default is Single** (GLM 5) for excellent quality at minimal cost. Use `--free` for zero cost, or `--council` for multi-model consensus.
+**Default is Single** (DeepSeek V4 Pro) for strong reasoning at very low cost. Use `--free` for zero cost, or `--council` for multi-model consensus.

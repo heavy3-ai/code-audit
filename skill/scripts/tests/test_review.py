@@ -105,16 +105,16 @@ class TestModelResolution:
     """Tests for model shortcut resolution."""
 
     def test_resolve_gpt_shortcut(self, temp_config):
-        """Verify 'gpt' resolves to GPT 5.4."""
+        """Verify 'gpt' resolves to GPT 5.5."""
         _, config = temp_config
         model = resolve_model("gpt", config)
-        assert model == "openai/gpt-5.4"
+        assert model == "openai/gpt-5.5"
 
     def test_resolve_deepseek_shortcut(self, temp_config):
-        """Verify 'deepseek' resolves to DeepSeek V3.2."""
+        """Verify 'deepseek' resolves to DeepSeek V4 Pro."""
         _, config = temp_config
         model = resolve_model("deepseek", config)
-        assert model == "deepseek/deepseek-v3.2"
+        assert model == "deepseek/deepseek-v4-pro"
 
     def test_resolve_free_uses_config(self, temp_config):
         """Verify 'free' uses free_model from config."""
@@ -137,9 +137,9 @@ class TestModelResolution:
     def test_resolve_case_insensitive(self, temp_config):
         """Verify shortcuts are case-insensitive."""
         _, config = temp_config
-        assert resolve_model("GPT", config) == "openai/gpt-5.4"
-        assert resolve_model("Gpt", config) == "openai/gpt-5.4"
-        assert resolve_model("DEEPSEEK", config) == "deepseek/deepseek-v3.2"
+        assert resolve_model("GPT", config) == "openai/gpt-5.5"
+        assert resolve_model("Gpt", config) == "openai/gpt-5.5"
+        assert resolve_model("DEEPSEEK", config) == "deepseek/deepseek-v4-pro"
 
 
 class TestOpenRouterAPICall:

@@ -1,8 +1,8 @@
 {
-  "model": "z-ai/glm-5",
+  "model": "deepseek/deepseek-v4-pro",
   "free_model": "nvidia/nemotron-3-nano-30b-a3b:free",
   "council_models": {
-    "correctness": "openai/gpt-5.4",
+    "correctness": "openai/gpt-5.5",
     "performance": "google/gemini-3.1-pro-preview",
     "security": "x-ai/grok-4.20-beta"
   },
@@ -11,18 +11,18 @@
   "max_file_size": 50000,
   "max_context": 500000,
   "max_context_by_model": {
-    "z-ai/glm-5": 500000,
-    "z-ai/glm-4.6": 500000,
-    "openai/gpt-5.4": 1000000,
+    "deepseek/deepseek-v4-pro": 1000000,
+    "deepseek/deepseek-v3.2": 500000,
+    "openai/gpt-5.5": 200000,
     "openai/gpt-5": 1000000,
     "google/gemini-3.1-pro-preview": 2000000,
     "google/gemini-2.5-pro": 2000000,
     "x-ai/grok-4.20-beta": 600000,
     "x-ai/grok-4": 600000,
-    "deepseek/deepseek-v3.2": 500000,
+    "z-ai/glm-4.6": 500000,
     "moonshotai/kimi-k2.5": 500000,
     "nvidia/nemotron-3-nano-30b-a3b:free": 300000
   },
   "enable_web_search": false,
-  "_note": "Default: GLM 5 (best price/performance for coding). Council uses 3 models. Use --council for 3-model review. web_search disabled 2026-04-14 — OpenRouter :online + Exa plugin returns HTTP 500 for large PR contexts (180K+ tokens), and the fallback path leaves responses truncated mid-stream. Re-enable once upstream fix lands."
+  "_note": "Default: DeepSeek V4 Pro (strong reasoning at low cost). Council uses 3 models (GPT 5.5 + Gemini 3.1 Pro + Grok 4.2). Use --council for 3-model review. web_search disabled 2026-04-14 — OpenRouter :online + Exa plugin returns HTTP 500 for large PR contexts (180K+ tokens), and the fallback path leaves responses truncated mid-stream. Re-enable once upstream fix lands."
 }

@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Heavy3 Code Audit (`/h3`) is a Claude Code skill providing AI-powered multi-model code reviews via OpenRouter. Tiers:
-- **Lite (default)**: DeepSeek V3.2, up to 100K tokens
-- **Pro ($59 Founder / $99 Regular)**: 3-model council (GPT 5.4 + Gemini 3.1 Pro + Grok 4), up to 200K tokens
+Heavy3 Code Audit (`/h3`) is a Claude Code skill providing AI-powered multi-model code reviews via OpenRouter. Modes:
+- **Single (default)**: DeepSeek V4 Pro, up to 200K tokens
+- **Council**: 3-model parallel review (GPT 5.5 + Gemini 3.1 Pro + Grok 4.2), up to 200K tokens
 - **Free**: Rotating free models from OpenRouter
 
 ## Local Development Setup
@@ -71,7 +71,7 @@ After symlinking, test in Claude Code:
 - `/h3 code` - Review uncommitted changes
 - `/h3 plan` - Review implementation plan
 - `/h3 pr <number>` - Review GitHub PR
-- `/h3 --council` - Pro council mode (requires license)
+- `/h3 --council` - 3-model council review
 
 ### Testing Requirements
 
@@ -87,7 +87,7 @@ After symlinking, test in Claude Code:
 ## Key Implementation Details
 
 - **Model shortcuts**: `--model gpt`, `--model deepseek`, `--model free` resolve to full OpenRouter model IDs
-- **Context limits**: Lite 100K tokens (~400K chars), Pro 200K tokens (~800K chars)
+- **Context limits**: Single mode 200K tokens (~800K chars); Council mode 200K tokens per reviewer (per-model overrides in `max_context_by_model`)
 - **Large changes**: SKILL.md instructs Claude to detect >50 files or >10K lines and break into module-by-module reviews
 - **PR review**: Uses `gh pr view` and `gh pr diff` for GitHub integration
-- **Council synthesis**: Pro mode outputs a comparison table across 3 reviewer perspectives (Correctness/Security/Performance)
+- **Council synthesis**: Council mode outputs a comparison table across 3 reviewer perspectives (Correctness/Security/Performance)

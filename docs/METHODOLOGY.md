@@ -24,7 +24,7 @@ After council review, Claude synthesizes all findings into a **3-column comparis
 
 **Example output:**
 
-| Aspect | Correctness (GPT 5.4) | Performance (Gemini 3.1) | Security (Grok 4) |
+| Aspect | Correctness (GPT 5.5) | Performance (Gemini 3.1) | Security (Grok 4) |
 |--------|----------------------|----------------------|---------------------|
 | **Focus** | Bugs, Logic, Edge Cases | Scaling, Memory, N+1 | Vulnerabilities, Auth |
 | **Findings** | ❌ Null check missing | ⚠️ Potential N+1 query | ✅ No issues found |
@@ -51,7 +51,7 @@ Three specialized reviewers, each with web search:
 
 | Role | Model | Focus | Search |
 |------|-------|-------|--------|
-| **Correctness Expert** | GPT 5.4 | Bugs, logic errors, edge cases, race conditions | Bing |
+| **Correctness Expert** | GPT 5.5 | Bugs, logic errors, edge cases, race conditions | Bing |
 | **Performance Critic** | Gemini 3.1 Pro | N+1 queries, memory leaks, scaling bottlenecks | Exa |
 | **Security Analyst** | Grok 4 | Vulnerabilities, auth issues, data exposure | Exa |
 
@@ -72,7 +72,7 @@ The Kilo AI test specifically evaluated Grok 4 on prototype pollution, agentic A
 
 | Pillar | Implementation | Benefit |
 |--------|---------------|---------|
-| **Different Models** | GPT 5.4 + Gemini 3.1 Pro + Grok 4 | Different training data, different blind spots |
+| **Different Models** | GPT 5.5 + Gemini 3.1 Pro + Grok 4 | Different training data, different blind spots |
 | **Specialized Roles** | Correctness + Performance + Security | Forces comprehensive coverage |
 | **Different Search Sources** | Bing + Exa | Facts verified across independent indexes |
 
@@ -90,7 +90,7 @@ The Kilo AI test specifically evaluated Grok 4 on prototype pollution, agentic A
 | Gemini Flash Study | Gemini 2.0 Flash achieves 63.89% accuracy |
 | False Positive Rate | Up to 24.80% of correct code receives incorrect suggestions |
 
-**Every model has different blind spots.** [Sonar's Dec 2025 analysis](https://www.sonarsource.com/blog/new-data-on-code-quality-gpt-5-2-high-opus-4-5-gemini-3-and-more/) of millions of lines of generated code:
+**Every model has different blind spots.** The GPT-5.4 / Gemini 3.1 Pro / Opus 4.5 numbers below come from [Sonar's Dec 2025 analysis](https://www.sonarsource.com/blog/new-data-on-code-quality-gpt-5-2-high-opus-4-5-gemini-3-and-more/) of millions of lines of generated code. Heavy3 has since upgraded the Correctness role from GPT 5.4 to GPT 5.5, but the underlying insight — that each architecture fails differently — still motivates the council design.
 
 | Model | Strength | Weakness |
 |-------|----------|----------|
@@ -193,7 +193,7 @@ Heavy3 Code Audit uniquely offers **pre-implementation validation**:
 
 | Review Type | Focus | Council Roles |
 |-------------|-------|---------------|
-| **Architecture Design** | Patterns, SOLID, separation of concerns | Design Expert (GPT 5.4) |
+| **Architecture Design** | Patterns, SOLID, separation of concerns | Design Expert (GPT 5.5) |
 | **Plan Feasibility** | Is this approach realistic? What are the risks? | All three reviewers |
 | **Scalability Assessment** | Will this scale? What are the bottlenecks? | Scalability Analyst (Gemini 3.1 Pro) |
 | **Security Architecture** | Threat model, attack surface, auth design | Security Architect (Grok 4) |

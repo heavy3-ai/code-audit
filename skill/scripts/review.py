@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Heavy3 Code Audit - Open Source
-Single model review via OpenRouter (default: GLM 5)
+Single model review via OpenRouter (default: DeepSeek V4 Pro)
 Sponsored by Heavy3.ai
 """
 
@@ -84,7 +84,7 @@ def retry_with_backoff(func, max_retries=MAX_RETRIES):
 # ============================================================================
 
 DEFAULT_CONFIG = {
-    "model": "z-ai/glm-5",                    # Default: GLM 5 (best price/performance)
+    "model": "deepseek/deepseek-v4-pro",      # Default: DeepSeek V4 Pro (strong reasoning at low cost)
     "free_model": "nvidia/nemotron-3-nano-30b-a3b:free",  # Free tier (update as models rotate)
     "reasoning": "high",                     # Always high for thorough review
     "docs_folder": "documents",
@@ -102,11 +102,15 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # Pricing per 1M tokens (approximate, update as OpenRouter prices change)
 MODEL_PRICING = {
+    "deepseek/deepseek-v4-pro": {"input": 0.435, "output": 0.87},
+    "deepseek/deepseek-v4-pro:online": {"input": 0.435, "output": 0.87},
+    "deepseek/deepseek-v3.2": {"input": 0.27, "output": 0.40},
     "z-ai/glm-5": {"input": 1.00, "output": 3.20},
     "z-ai/glm-5:online": {"input": 1.00, "output": 3.20},
     "moonshotai/kimi-k2.5": {"input": 0.50, "output": 2.80},
     "moonshotai/kimi-k2.5:online": {"input": 0.50, "output": 2.80},
-    "deepseek/deepseek-v3.2": {"input": 0.27, "output": 0.40},
+    "openai/gpt-5.5": {"input": 5.00, "output": 30.00},
+    "openai/gpt-5.5:online": {"input": 5.00, "output": 30.00},
     "openai/gpt-5.4": {"input": 2.50, "output": 15.00},
     "openai/gpt-5.4:online": {"input": 2.50, "output": 15.00},
     "openai/gpt-5.2": {"input": 1.75, "output": 14.00},
@@ -644,13 +648,13 @@ def call_openrouter(config: dict, review_type: str, context: dict, stream: bool 
 
 
 MODEL_SHORTCUTS = {
-    "gpt": "openai/gpt-5.4",
-    "premium": "openai/gpt-5.4",
+    "gpt": "openai/gpt-5.5",
+    "premium": "openai/gpt-5.5",
     "glm": "z-ai/glm-5",
-    "standard": "z-ai/glm-5",
-    "std": "z-ai/glm-5",
+    "standard": "deepseek/deepseek-v4-pro",
+    "std": "deepseek/deepseek-v4-pro",
     "kimi": "moonshotai/kimi-k2.5",
-    "deepseek": "deepseek/deepseek-v3.2",
+    "deepseek": "deepseek/deepseek-v4-pro",
     # "free" is handled specially in resolve_model() to read from config
 }
 
@@ -675,7 +679,7 @@ def main():
     parser.add_argument("--context-file", required=True,
                         help="Path to JSON file with review context")
     parser.add_argument("--model", "-m", default=None,
-                        help="Model to use: 'gpt'/'premium', 'deepseek'/'std', 'free', or full OpenRouter model ID")
+                        help="Model to use: 'gpt'/'premium' (GPT 5.5), 'deepseek'/'std' (DeepSeek V4 Pro), 'glm', 'kimi', 'free', or full OpenRouter model ID")
     parser.add_argument("--no-stream", action="store_true",
                         help="Disable streaming (wait for full response)")
 

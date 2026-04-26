@@ -61,7 +61,7 @@ The default timeout is 120 seconds. For very large reviews, the model may need m
 
 Try:
 1. Reduce the amount of code being reviewed
-2. Use a faster model (e.g., `deepseek/deepseek-v3.2`)
+2. Use a faster model (e.g., `deepseek/deepseek-v4-flash`)
 3. Set `"reasoning": "medium"` or `"none"` in config.json
 
 ### Invalid API key error
