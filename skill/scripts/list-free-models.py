@@ -4,13 +4,15 @@ List Free Models Utility
 Fetches and displays free models from OpenRouter, sorted by release date.
 """
 
+import argparse
+import json
 import sys
 from datetime import datetime
 
 try:
     import requests
 except ImportError:
-    print("ERROR: 'requests' module not found. Install with: pip install requests")
+    print("ERROR: 'requests' module not found. Install with: pip install requests", file=sys.stderr)
     sys.exit(1)
 
 
@@ -55,9 +57,9 @@ def fetch_models():
         response.raise_for_status()
         return response.json().get("data", [])
     except requests.exceptions.RequestException as e:
-        print(f"ERROR: Failed to fetch models: {e}")
-        print("\nTry browsing manually:")
-        print("  https://openrouter.ai/models?fmt=table&order=newest")
+        print(f"ERROR: Failed to fetch models: {e}", file=sys.stderr)
+        print("\nTry browsing manually:", file=sys.stderr)
+        print("  https://openrouter.ai/models?fmt=table&order=newest", file=sys.stderr)
         sys.exit(1)
 
 
@@ -103,9 +105,20 @@ def is_free_model(model: dict) -> bool:
         return False
 
 
-def main():
-    print("Fetching models from OpenRouter...")
-    print()
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description="List free models on OpenRouter, newest first."
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit the model list as a JSON array on stdout (no table chrome).",
+    )
+    args = parser.parse_args(argv)
+
+    if not args.json:
+        print("Fetching models from OpenRouter...")
+        print()
 
     models = fetch_models()
 
@@ -113,8 +126,11 @@ def main():
     free_models = [m for m in models if is_free_model(m)]
 
     if not free_models:
-        print("No free models found at the moment.")
-        print("\nCheck manually: https://openrouter.ai/models?fmt=table&order=newest")
+        if args.json:
+            print("[]")
+        else:
+            print("No free models found at the moment.")
+            print("\nCheck manually: https://openrouter.ai/models?fmt=table&order=newest")
         return
 
     # Sort by date (newest first), models without dates go last
@@ -125,6 +141,20 @@ def main():
         return (not has_date, -dt.timestamp() if has_date else 0)
 
     free_models.sort(key=sort_key)
+
+    if args.json:
+        rows = [
+            {
+                "id": m.get("id", "unknown"),
+                "name": m.get("name", m.get("id", "unknown")),
+                "type": is_thinking_model(m.get("id", ""), m.get("name", "")),
+                "context_length": m.get("context_length", 0) or 0,
+                "released": format_date(m.get("created")),
+            }
+            for m in free_models
+        ]
+        print(json.dumps(rows, indent=2))
+        return
 
     print("FREE MODELS ON OPENROUTER (newest first)")
     print("-" * 78)
@@ -163,9 +193,12 @@ def main():
     print("   standard  = Regular model (faster)")
     print("   -         = Unknown type / no date available")
     print()
+    from pathlib import Path
+
+    config_path = Path(__file__).resolve().parent.parent / "config.json"
     print("TO USE A FREE MODEL:")
     print()
-    print("   1. Edit: ~/.claude/skills/h3/config.json")
+    print(f"   1. Edit: {config_path}")
     print('   2. Set:  "free_model": "<model-id-from-above>"')
     print("   3. Run:  /h3 --free")
     print()

@@ -1,6 +1,6 @@
 ---
 name: h3
-description: Heavy3 Code Audit - Multi-model code review for coding agents (Sponsored by Heavy3.ai)
+description: Heavy3 Code Audit - Multi-model code review for coding agents via OpenRouter. Reviews uncommitted changes, staged files, the last commit, a commit range, a GitHub PR, or a plan document with a single model (DeepSeek V4 Pro) or a 3-model council (GPT 5.5 + Gemini 3.1 Pro + Grok 4), always showing a cost estimate for user confirmation before any API call. Use when the user asks for /h3, a Heavy3 review, an external or second-opinion model review, or a council review of a diff, PR, plan, or commit range. (Sponsored by Heavy3.ai)
 argument-hint: "[pr <number>] [plan <file>] [<file>.md] [<range>] [--council] [--staged] [--commit] [--free] [--model MODEL]"
 allowed-tools: Read, Bash, Glob, Grep
 disable-model-invocation: true
@@ -15,8 +15,9 @@ You are helping the user get AI-powered code reviews via OpenRouter.
 **All features are free and open source:**
 - Single model review with DeepSeek V4 Pro (strong reasoning at low cost)
 - 3-model council with GPT 5.5 + Gemini 3.1 Pro + Grok 4
-- Web search integration
-- Up to 200K token context
+- Per-model context budgets, 200K to 2M characters (see Context Limits)
+
+**Web search:** reviews run WITHOUT web search. The switch is `enable_web_search` in config.json and it ships set to `false`. Do not advertise or rely on web search unless the user has turned that switch on.
 
 ## Arguments
 
@@ -56,13 +57,7 @@ You are helping the user get AI-powered code reviews via OpenRouter.
 
 **Step 1: Check for explicit arguments**
 
-If `$ARGUMENTS` contains any of these, skip detection and execute directly:
-- `pr <number>` → PR review
-- `plan <path>` → Plan review of specific file
-- `<file>.md` (any markdown file path) → Plan review
-- `<range>` (commit range like `HEAD~3..HEAD`) → Code review of range
-- `--staged` → Staged changes review
-- `--commit` → Last commit review
+If `$ARGUMENTS` contains any explicit target or scope modifier (see Arguments), skip detection and execute directly via the matching workflow in Your Task.
 
 **Step 2: Check for uncommitted changes**
 
@@ -118,47 +113,25 @@ Wait for user response and proceed accordingly.
 
 ### Commit Range Support
 
-For reviewing features/bug fixes spanning multiple commits:
-
-| Input | Git Command | Description |
-|-------|-------------|-------------|
-| `HEAD~1..HEAD` | `git diff HEAD~1..HEAD` | Last 1 commit |
-| `HEAD~3..HEAD` | `git diff HEAD~3..HEAD` | Last 3 commits |
-| `abc123..HEAD` | `git diff abc123..HEAD` | From specific commit to HEAD |
-| `abc123..def456` | `git diff abc123..def456` | Between two commits |
-
-When user specifies a range, show commit summary before the review:
-```markdown
-## Reviewing Commit Range: HEAD~3..HEAD
-
-| Commit | Date | Author | Message |
-|--------|------|--------|---------|
-| abc123 | 2025-01-28 | John | feat: Add login |
-| def456 | 2025-01-29 | John | fix: Handle edge case |
-| ghi789 | 2025-01-30 | John | test: Add unit tests |
-
-**3 commits, +150/-30 lines across 8 files**
-```
+For features/bug fixes spanning multiple commits, any `<start>..<end>` range works: `HEAD~1..HEAD` (last commit), `HEAD~3..HEAD` (last 3), `abc123..HEAD`, `abc123..def456`. The review diff is `git diff <range>`. When the user specifies a range, show a short commit summary table (hash, date, author, message, plus total +/- lines and file count) before the review; the Commit Range Review Workflow below has the exact commands.
 
 ## Configuration
-Read the config from: `~/.claude/skills/h3/config.json`
-```json
-{
-  "model": "deepseek/deepseek-v4-pro",
-  "free_model": "nvidia/nemotron-3-nano-30b-a3b:free",
-  "council_models": {
-    "correctness": "openai/gpt-5.5",
-    "performance": "google/gemini-3.1-pro-preview",
-    "security": "x-ai/grok-4.20-beta"
-  },
-  "reasoning": "high",
-  "docs_folder": "documents",
-  "max_context": 500000,
-  "enable_web_search": false
-}
-```
 
-API key is stored in `~/.claude/skills/h3/.env`:
+Read the config from: `${CLAUDE_SKILL_DIR}/config.json`. Read the file for live values instead of assuming numbers; it is the single source of truth for models, budgets, and switches.
+
+| Key | Meaning |
+|-----|---------|
+| `model` | Default single-review model (DeepSeek V4 Pro) |
+| `free_model` | Model used with `--free` |
+| `council_models` | The 3 council reviewers (correctness / performance / security) |
+| `reasoning` | Reasoning effort passed to OpenRouter |
+| `docs_folder` | Project docs folder to include in review context |
+| `max_file_size` | Per-file character cap to respect when adding file contents to the context |
+| `max_context` | Fallback context character budget (see Context Limits) |
+| `max_context_by_model` | Per-model context character budgets (see Context Limits) |
+| `enable_web_search` | Web search switch; ships `false`, so reviews run without web search |
+
+API key is stored in `${CLAUDE_SKILL_DIR}/.env`:
 ```
 OPENROUTER_API_KEY=your-key-here
 ```
@@ -186,7 +159,9 @@ OPENROUTER_API_KEY=your-key-here
 1. Read free_model from config.json
 2. Warn user: "Note: Free models rotate on OpenRouter. Your configured model may be unavailable."
 3. If API call fails with model error:
-   - Run: `python3 ~/.claude/skills/h3/scripts/list-free-models.py --json`
+   - Run: `python3 "${CLAUDE_SKILL_DIR}/scripts/list-free-models.py" --json`
+   - This script needs the third-party `requests` package (`pip install requests`); review.py and council.py are stdlib-only
+   - Expect a JSON list of free models; if the installed script version prints a human-readable table instead, read the model IDs from the table (same data either way)
    - Show available free models
    - Ask: "Pick a new free model?"
    - If user selects, UPDATE config.json with new free_model using Bash (e.g., `python3 -c "import json; ..."` to update the JSON file)
@@ -212,9 +187,13 @@ OPENROUTER_API_KEY=your-key-here
 
 ## Context Limits
 
-| Max Context | Chars (approx) |
-|-------------|----------------|
-| 200K tokens | ~800K chars |
+There is no single fixed limit. review.py and council.py truncate the assembled context to a per-model CHARACTER budget:
+
+1. `max_context_by_model` in config.json maps model IDs to character budgets (shipped values range from 200K to 2M chars depending on the model). Lookup order: exact model ID, then the ID with its `:online`/`:free` suffix stripped, then prefix match.
+2. A model with no entry falls back to `max_context` (500K chars in the shipped config).
+3. Anything past the budget is cut off by the script with a `[... truncated due to length ...]` marker.
+
+Rule of thumb: 1 token ≈ 4 characters. When sizing a review, read the live budgets from `${CLAUDE_SKILL_DIR}/config.json` for the model you are about to use.
 
 ---
 
@@ -222,28 +201,7 @@ OPENROUTER_API_KEY=your-key-here
 
 **Before running a review**, estimate and display the cost to the user.
 
-### OpenRouter Pricing (per 1M tokens, approximate)
-
-| Model | Input | Output | Typical Review Cost |
-|-------|-------|--------|---------------------|
-| DeepSeek V4 Pro (default) | $0.435 | $0.87 | ~$0.002-0.008 |
-| GPT 5.5 (council) | $5.00 | $30.00 | ~$0.10-0.40 |
-| Gemini 3.1 Pro (council) | $2.00 | $12.00 | ~$0.05-0.18 |
-| Grok 4.2 (council) | $2.00 | $6.00 | ~$0.04-0.12 |
-
-### Estimation Formula
-
-```
-input_tokens = total_context_chars / 4
-output_tokens = ~2500 (typical review length)
-
-# Single model mode (DeepSeek V4 Pro)
-single_cost = (input_tokens * 0.435 + output_tokens * 0.87) / 1_000_000
-
-# Council mode (all 3 models in parallel: GPT 5.5 + Gemini 3.1 Pro + Grok 4.2)
-council_cost = (input_tokens * (5.00 + 2.00 + 2.00) + output_tokens * (30 + 12 + 6)) / 1_000_000
-             ≈ input_tokens * 9.00/M + output_tokens * 48/M
-```
+Pricing table, estimation formula, and worked examples live in `${CLAUDE_SKILL_DIR}/references/cost-estimation.md`. Read that file only when you reach this step (it is not needed for routing or argument parsing).
 
 ### Display Cost Estimate and Confirm
 
@@ -268,11 +226,6 @@ After gathering context and saving to the unique context file (`$H3_CONTEXT_FILE
 
 If user declines, exit gracefully: "Review cancelled."
 
-**Examples:**
-- Small review (10K chars / 2.5K tokens): Single ~$0.003, Council ~$0.14
-- Medium review (50K chars / 12.5K tokens): Single ~$0.008, Council ~$0.23
-- Large review (200K chars / 50K tokens): Single ~$0.024, Council ~$0.57
-
 ---
 
 ## Handle Large Changes First
@@ -281,100 +234,14 @@ If user declines, exit gracefully: "Review cancelled."
 
 ### Step 0: Estimate Context Size
 - Count characters in: diff + file contents + docs + tests
-- **Rule of thumb**: 1 token ≈ 4 characters
-- Check against 200K token limit
+- Check against the active model's character budget (see Context Limits)
 
 **Quick size indicators (likely too large):**
 - More than 50 changed files
 - More than 10,000 additions + deletions
-- Total content exceeds tier limit
+- Total characters exceed the model's budget
 
-### Step 1: If Large, Stop and Present Module Options
-
-If estimated context exceeds limit, **DO NOT proceed automatically**. Present module options to user:
-
-```markdown
-## Large Change Detected - Module Selection Required
-
-| Metric | Value | Limit |
-|--------|-------|-------|
-| Changed files | [X] | ~50 |
-| Lines changed | +[X]/-[Y] | ~10,000 |
-| Est. tokens | ~[X]K | 200K |
-
-I found [X] changed files across these areas:
-
-| # | Module | Files | Est. Tokens | Description |
-|---|--------|-------|-------------|-------------|
-| 1 | src/components | 18 | ~25K | UI components |
-| 2 | src/utils | 12 | ~15K | Utility functions |
-| 3 | src/api | 10 | ~20K | API handlers |
-| 4 | tests | 5 | ~8K | Test files |
-
-**How would you like to proceed?**
-1. Review modules separately (4 reviews, ~$X.XX total)
-2. Combine modules 2+3 into one review (3 reviews)
-3. Review all together (will truncate to fit limit)
-4. Custom grouping (tell me which modules to combine)
-```
-
-### Step 2: Module-by-Module Review Workflow
-
-After user selects grouping:
-
-1. **Create progress tracking table**:
-```markdown
-## Review Progress
-
-| Module | Files | Status | Key Findings |
-|--------|-------|--------|--------------|
-| src/components | 18 | ⏳ In Progress | - |
-| src/utils + src/api | 22 | ⏸️ Pending | - |
-| tests | 5 | ⏸️ Pending | - |
-```
-
-2. **Review each module group**:
-   - Run the review for current module
-   - Update the progress table with status and key findings
-   - After each review, ask: "Continue to next module? (y/n)"
-   - If user says no, offer to save progress and resume later
-
-3. **Update progress after each module**:
-```markdown
-## Review Progress (Updated)
-
-| Module | Files | Status | Key Findings |
-|--------|-------|--------|--------------|
-| src/components | 18 | ✅ Complete | 2 security, 1 perf issue |
-| src/utils + src/api | 22 | ⏳ In Progress | - |
-| tests | 5 | ⏸️ Pending | - |
-```
-
-4. **Final cross-module synthesis** (after all modules reviewed):
-```markdown
-## Cross-Module Summary
-
-### All Issues by Category
-
-**Security Issues (across all modules):**
-- [src/components:42] XSS vulnerability in user input
-- [src/api:15] Missing authentication check
-
-**Performance Issues (across all modules):**
-- [src/components:88] N+1 query in list render
-
-**Correctness Issues (across all modules):**
-- [src/utils:23] Off-by-one error in pagination
-
-### Recommended Fix Priority
-1. **CRITICAL**: [Security issue from module 1]
-2. **HIGH**: [Performance issue from module 2]
-3. **MEDIUM**: [Other issues...]
-
-### Cross-Module Concerns
-- [Any issues that span multiple modules]
-- [Architectural concerns from combined view]
-```
+If any indicator trips, **DO NOT proceed automatically**. Read `${CLAUDE_SKILL_DIR}/references/large-changes.md` (read it only when this happens) and follow its module-selection and module-by-module review workflow, including the progress table and cross-module synthesis.
 
 ---
 
@@ -388,15 +255,25 @@ After user selects grouping:
    - `pr <number>` → Go to PR Review workflow
    - `plan <path>` or `<file>.md` → Go to Plan Review workflow
    - `<range>` (e.g., `HEAD~3..HEAD`) → Go to Commit Range Review workflow
-   - `--staged` → Go to Staged Changes Review workflow
+   - `--staged` → Go to Code Review workflow (staged scope)
    - `--commit` → Go to Last Commit Review workflow
 
-2. **If no explicit target, run Smart Detection**:
-   - Check `git status --porcelain` for uncommitted changes
-   - If changes exist → Confirm with user, then Code Review workflow
-   - If no changes → Check for plan (conversation context, `plan.md` in cwd, `~/.claude/plans/`)
-   - If plan found → Confirm with user, then Plan Review workflow
-   - If no plan → Ask user what to review (latest commit, range, or cancel)
+2. **If no explicit target, run Smart Detection** (see the Smart Detection section above) and route to the confirmed workflow.
+
+### Shared Review Pipeline (every workflow ends with this)
+
+After gathering the workflow-specific inputs listed below:
+
+1. Read FULL content of each changed file
+2. Find relevant documentation (CLAUDE.md, docs folder from config)
+3. Include related test files (code, commit, range, and PR reviews; not plan reviews)
+4. Find cross-file dependencies (see below; code and PR reviews only)
+5. Include conversation context (see below)
+6. **Generate a unique context file path and save context JSON using Bash** (see Temp File Handling — do NOT use the Write tool). Schema: see Context JSON Format.
+7. **Calculate accurate cost estimate from the actual context size, display, and wait for user confirmation** (see Cost Estimation section)
+8. If user confirms, run the review script immediately:
+   - Default: `python3 "${CLAUDE_SKILL_DIR}/scripts/review.py" --type <code|plan|pr> --context-file "$H3_CONTEXT_FILE"`
+   - With --council: `python3 "${CLAUDE_SKILL_DIR}/scripts/council.py" --type <code|plan|pr> --context-file "$H3_CONTEXT_FILE"`
 
 ### Code Review Workflow (uncommitted changes)
 
@@ -405,76 +282,27 @@ After user selects grouping:
    - With `--staged`: `git diff --cached` (staged only)
 2. Get full diff using appropriate git command
 3. Get changed files list
-4. Read FULL content of each changed file
-5. Find relevant documentation (CLAUDE.md, docs folder)
-6. Include related test files
-7. Find cross-file dependencies (see below)
-8. Include conversation context (see below)
-9. **Generate a unique context file path and save context JSON using Bash** (see Temp File Handling — do NOT use the Write tool)
-10. **Calculate accurate cost estimate from the actual context size, display, and wait for user confirmation** (see Cost Estimation section)
-11. If user confirms, run review script immediately:
-    - Default: `python3 ~/.claude/skills/h3/scripts/review.py --type code --context-file "$H3_CONTEXT_FILE"`
-    - With --council: `python3 ~/.claude/skills/h3/scripts/council.py --type code --context-file "$H3_CONTEXT_FILE"`
+4. Run the Shared Review Pipeline with `--type code`
 
 ### Last Commit Review Workflow (`--commit`)
 
 1. Check if commits exist: `git log -1 --oneline 2>/dev/null`
 2. If no commits, report: "No commits found. Make a commit first." and exit
-3. Get last commit metadata:
-   - `git log -1 --pretty=format:"%H|%s|%an|%ad" --date=short` for hash, subject, author, date
+3. Get last commit metadata: `git log -1 --pretty=format:"%H|%s|%an|%ad" --date=short` for hash, subject, author, date
 4. Get the diff: `git diff HEAD~1..HEAD`
 5. Get changed files: `git diff HEAD~1..HEAD --name-only`
-6. Read FULL content of each changed file
-7. Find relevant documentation (CLAUDE.md, docs folder)
-8. Include related test files
-9. Find cross-file dependencies (see below)
-10. Include conversation context (see below)
-11. Add commit metadata to context JSON:
-    ```json
-    "commit_metadata": {
-      "hash": "abc123...",
-      "subject": "feat: Add user authentication",
-      "author": "John Doe",
-      "date": "2025-01-25"
-    }
-    ```
-12. **Generate a unique context file path and save context JSON using Bash** (see Temp File Handling)
-13. **Calculate accurate cost estimate from the actual context size, display, and wait for user confirmation** (see Cost Estimation section)
-14. If user confirms, run review script immediately:
-    - Default: `python3 ~/.claude/skills/h3/scripts/review.py --type code --context-file "$H3_CONTEXT_FILE"`
-    - With --council: `python3 ~/.claude/skills/h3/scripts/council.py --type code --context-file "$H3_CONTEXT_FILE"`
+6. Add the metadata to the context JSON under `commit_metadata` (see Context JSON Format)
+7. Run the Shared Review Pipeline with `--type code`
 
 ### Commit Range Review Workflow (`<range>` like `HEAD~3..HEAD`)
 
 1. Parse the range from arguments (e.g., `HEAD~3..HEAD`, `abc123..def456`)
-2. Validate range: `git rev-parse <start> <end> 2>/dev/null`
-3. If invalid, report error and exit
-4. Show commit summary (informational):
-   ```bash
-   git log --oneline --reverse <range>
-   git diff <range> --stat
-   ```
-5. Get the diff: `git diff <range>`
-6. Get changed files: `git diff <range> --name-only`
-7. Read FULL content of each changed file
-8. Find relevant documentation (CLAUDE.md, docs folder)
-9. Include related test files
-10. Find cross-file dependencies (see below)
-11. Include conversation context (see below)
-12. Add commit range metadata to context JSON:
-    ```json
-    "commit_range": {
-      "range": "HEAD~3..HEAD",
-      "commits": [
-        {"hash": "abc123", "subject": "feat: Add login", "date": "2025-01-28"},
-        {"hash": "def456", "subject": "fix: Edge case", "date": "2025-01-29"}
-      ],
-      "total_commits": 2
-    }
-    ```
-13. **Generate a unique context file path and save context JSON using Bash** (see Temp File Handling)
-14. **Calculate accurate cost estimate from the actual context size, display, and wait for user confirmation** (see Cost Estimation section)
-15. If user confirms, run review script immediately (single model or council) with `--context-file "$H3_CONTEXT_FILE"`
+2. Validate range: `git rev-parse <start> <end> 2>/dev/null`; if invalid, report error and exit
+3. Show commit summary (informational): `git log --oneline --reverse <range>` and `git diff <range> --stat`
+4. Get the diff: `git diff <range>`
+5. Get changed files: `git diff <range> --name-only`
+6. Add range metadata to the context JSON under `commit_range` (see Context JSON Format)
+7. Run the Shared Review Pipeline with `--type code`
 
 ### Plan Review Workflow (`plan <path>` or `<file>.md` or detected plan)
 
@@ -483,24 +311,9 @@ After user selects grouping:
    - If `<file>.md` provided → Use that file
    - If detected via Smart Detection → Use detected path
    - If none → Check most recent in `~/.claude/plans/`
-2. **Read the FULL plan content** and include it in the context JSON under `plan_content` field
+2. **Read the FULL plan content** and include it in the context JSON under the `plan_content` field
 3. Parse plan for file paths and read those files into `file_contents`
-4. Find relevant documentation (CLAUDE.md, docs folder)
-5. Include conversation context (see below)
-6. **Generate a unique context file path and save context JSON using Bash** (see Temp File Handling) with `plan_content` included:
-   ```json
-   {
-     "review_type": "plan",
-     "plan_content": "# Full plan content here\n\n## Overview\n...",
-     "file_contents": { ... },
-     "documentation": { ... },
-     "conversation_context": { ... }
-   }
-   ```
-7. **Calculate accurate cost estimate from the actual context size, display, and wait for user confirmation** (see Cost Estimation section)
-8. If user confirms, run review script immediately:
-   - Default: `python3 ~/.claude/skills/h3/scripts/review.py --type plan --context-file "$H3_CONTEXT_FILE"`
-   - With --council: `python3 ~/.claude/skills/h3/scripts/council.py --type plan --context-file "$H3_CONTEXT_FILE"`
+4. Run the Shared Review Pipeline with `--type plan`
 
 **IMPORTANT**: Do NOT pass `--plan-file` as a separate argument. The plan content MUST be included directly in the context JSON file under the `plan_content` key.
 
@@ -509,14 +322,8 @@ After user selects grouping:
 1. Extract PR number from arguments
 2. Fetch PR info: `gh pr view <number> --json title,body,author,baseRefName,headRefName,files,additions,deletions`
 3. Get PR diff: `gh pr diff <number>`
-4. Read full content of changed files
-5. Find relevant documentation
-6. Include related test files
-7. Find cross-file dependencies (see below)
-8. Include conversation context (see below)
-9. **Generate a unique context file path and save context JSON (with pr_metadata) using Bash** (see Temp File Handling)
-10. **Calculate accurate cost estimate from the actual context size, display, and wait for user confirmation** (see Cost Estimation section)
-11. If user confirms, run review script immediately (single model or council) with `--context-file "$H3_CONTEXT_FILE"`
+4. Add the PR info to the context JSON under `pr_metadata` (see Context JSON Format)
+5. Run the Shared Review Pipeline with `--type pr`
 
 ---
 
@@ -548,32 +355,9 @@ Review the conversation history and include relevant context that explains the d
 
 ## Find Cross-File Dependencies
 
-For code and PR reviews, search for files that import or reference changed files. This helps reviewers catch breaking changes.
+For code and PR reviews (not plan reviews), search for files that import or reference the changed files. This helps reviewers catch breaking changes. Cap at 20 dependent files, capture the import line(s) plus ~3 lines of context each, store them in the context JSON as `dependent_files`, and omit the key entirely when none are found.
 
-**When to include:** Only for code and PR reviews (not plan reviews).
-
-**How to gather:**
-
-1. For each file in `changed_files`, extract its basename (e.g., `utils.py` from `src/utils.py`)
-2. Search the project for files importing or referencing the changed files:
-   ```bash
-   grep -rn --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.py" --include="*.go" --include="*.rs" --include="*.java" \
-     -e "import.*<basename_without_ext>" -e "from.*<basename_without_ext>" -e "require.*<basename_without_ext>" \
-     --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=build --exclude-dir=dist --exclude-dir=__pycache__ --exclude-dir=.next --exclude-dir=venv --exclude-dir=.venv \
-     --exclude-dir=locales --exclude-dir=locale --exclude-dir=i18n --exclude-dir=translations --exclude-dir=generated --exclude-dir=.generated \
-     .
-   ```
-3. Filter results:
-   - **Exclude** files already in `file_contents` (already being reviewed)
-   - **Exclude** files already in `test_files`
-4. **Cap at 20 files.** If more than 20 unique files found:
-   - **Prioritize**: files that call changed functions over files that only import; files closer in the directory tree to the changed files
-   - **Deprioritize**: files following the same repetitive pattern (e.g., many locale files all importing the same key)
-   - Include the top 20 files with full snippets
-   - Add one summary entry keyed `"(+N more files)"` listing just the remaining file paths, one per line (no content snippets)
-5. For each included dependent file, capture import line(s) + ~3 lines of surrounding context
-6. Add to context JSON as `dependent_files` dict (keyed by file path, values are the relevant snippets)
-7. If no dependencies found, omit the `dependent_files` key entirely
+The exact grep command, filtering rules, and the over-20 prioritization scheme live in `${CLAUDE_SKILL_DIR}/references/cross-file-dependencies.md`. Read that file when you reach step 4 of the Shared Review Pipeline.
 
 ---
 
@@ -581,54 +365,7 @@ For code and PR reviews, search for files that import or reference changed files
 
 **IMPORTANT**: All content must be included IN the context JSON file. Do NOT pass separate file arguments.
 
-```json
-{
-  "review_type": "plan" | "code" | "pr",
-  "conversation_context": {
-    "original_request": "Brief summary of what user originally asked for",
-    "approach_notes": "Key decisions made during implementation",
-    "relevant_exchanges": [
-      {"role": "user", "content": "Can you add validation to the form?"},
-      {"role": "assistant", "content": "I'll add Zod validation. Using inline validation rather than form-level because..."}
-    ],
-    "previous_review_findings": "Summary of any prior /h3 review in this session"
-  },
-  "plan_content": "# Full plan markdown content (REQUIRED for plan reviews)",
-  "diff": "git diff output (for code/pr reviews)",
-  "changed_files": ["path1", "path2"],
-  "file_contents": {
-    "path1": "full file content...",
-    "path2": "full file content..."
-  },
-  "documentation": {
-    "CLAUDE.md": "...",
-    "documents/feature.md": "..."
-  },
-  "test_files": {
-    "path1.test.ts": "..."
-  },
-  "dependent_files": {
-    "src/components/UserList.tsx": "import { validateEmail } from '../utils';\n...\nconst isValid = validateEmail(user.email);",
-    "src/api/handlers.ts": "import { calculateTotal } from '../utils';\n...\nreturn calculateTotal(cart.items);"
-  },
-  "pr_metadata": {
-    "number": 123,
-    "title": "...",
-    "body": "...",
-    "author": "...",
-    "base_branch": "main",
-    "head_branch": "feature",
-    "additions": 100,
-    "deletions": 50
-  },
-  "commit_metadata": {
-    "hash": "abc123...",
-    "subject": "feat: Add user authentication",
-    "author": "John Doe",
-    "date": "2025-01-25"
-  }
-}
-```
+The full schema (all top-level keys, per-review-type requirements, example values) is in `${CLAUDE_SKILL_DIR}/references/context-json-format.md`. Read that file when you assemble the context JSON (it is not needed before then). Top-level keys: `review_type`, `conversation_context`, `plan_content` (plan reviews), `diff` + `changed_files` + `file_contents` (code/pr reviews), `documentation`, `test_files`, `dependent_files`, `pr_metadata`, `commit_metadata`, `commit_range`.
 
 ---
 
@@ -638,13 +375,7 @@ For code and PR reviews, search for files that import or reference changed files
 
 **CRITICAL: Use a UNIQUE filename per review session to prevent concurrent reviews from overwriting each other.**
 
-Generate a unique context file path at the start of each review using a timestamp and random suffix:
-
-```bash
-H3_CONTEXT_FILE="/tmp/h3-context-$(date +%s)-$RANDOM.json"
-```
-
-Then use `$H3_CONTEXT_FILE` for all subsequent commands in that review session. Example:
+Generate a unique context file path at the start of each review using a timestamp and random suffix, then use `$H3_CONTEXT_FILE` for all subsequent commands in that review session:
 
 ```bash
 H3_CONTEXT_FILE="/tmp/h3-context-$(date +%s)-$RANDOM.json"
@@ -671,64 +402,11 @@ If council mode, show all 3 reviews clearly labeled with their roles.
 
 ### Step 2: Synthesize (Council Mode Only) - COMPARISON TABLE REQUIRED
 
-For council reviews, YOU (Claude) MUST synthesize with a comparison table showing all 3 reviews:
+For council reviews, YOU (Claude) MUST synthesize the 3 reviews. Do NOT just list them sequentially, and do NOT skip the comparison table even if the reviews are similar.
 
-```markdown
-## Claude's Synthesis
+**CRITICAL REQUIREMENT: The 3-column comparison table is Heavy3's TRADEMARK FEATURE.** The synthesis must contain: the 3-column comparison table, consensus issues (flagged by 2+ reviewers), notable findings per reviewer, a final recommendation (APPROVE / APPROVE WITH CHANGES / REQUEST CHANGES), and a priority action list.
 
-### Comparison of All Three Reviews
-
-| Aspect | Correctness (GPT 5.5) | Performance (Gemini 3.1) | Security (Grok 4) |
-|--------|----------------------|----------------------|---------------------|
-| **Focus** | Bugs, Logic, Edge Cases | Scaling, Memory, N+1 | Vulnerabilities, Auth |
-| **Findings** | ❌ 1 bug: null check missing | ⚠️ Potential N+1 query | ✅ No XSS, SQL injection |
-| **Verdict** | REQUEST CHANGES | APPROVE WITH NOTES | APPROVE |
-
-Legend: ✅ = No issues | ⚠️ = Warning/Concern | ❌ = Critical issue
-
-### Consensus Issues (Flagged by 2+ reviewers)
-- [Issue that multiple reviewers agree on]
-
-### Notable Findings (From individual reviewers)
-- **Correctness Expert**: [Specific finding]
-- **Security Analyst**: [Specific finding]
-- **Performance Critic**: [Specific finding]
-
-### Final Recommendation
-[Your overall assessment: APPROVE / APPROVE WITH CHANGES / REQUEST CHANGES]
-
-**Priority Actions:**
-1. [Most important fix]
-2. [Second priority]
-3. [Lower priority]
-```
-
-**CRITICAL REQUIREMENT: The 3-column comparison table is Heavy3's TRADEMARK FEATURE.**
-
-You MUST ALWAYS include this table for council reviews. This is what differentiates Heavy3 from single-model reviews and provides unique value to users.
-
-**Checklist for Council Synthesis:**
-- [ ] 3-column comparison table with all aspects
-- [ ] Legend explaining ✅ ⚠️ ❌ symbols
-- [ ] Consensus issues (flagged by 2+ reviewers)
-- [ ] Notable findings from each reviewer
-- [ ] Final recommendation (APPROVE / APPROVE WITH CHANGES / REQUEST CHANGES)
-- [ ] Priority action list
-
-**DO NOT** just list the three reviews sequentially without synthesis.
-**DO NOT** skip the comparison table even if reviews are similar.
-**DO** actively identify where reviewers agree or disagree.
-
-### Why This Matters: Synthesis Creates Action
-
-The comparison table is just the start. What makes Heavy3 valuable is **turning diverse perspectives into actionable next steps**:
-
-1. **Consensus = High Confidence**: When 2+ reviewers flag the same issue, prioritize it
-2. **Unique Insights = Coverage**: Each specialist catches things others miss
-3. **Disagreement = Discussion Point**: When reviewers conflict, surface it for human judgment
-4. **Priority Actions = Clear Path Forward**: Don't just report—recommend what to fix first
-
-The goal isn't just to show three opinions. It's to synthesize them into **one clear action plan** the developer can execute immediately.
+The full synthesis template, checklist, and rationale live in `${CLAUDE_SKILL_DIR}/references/council-synthesis.md`. Read that file when a `--council` review completes, before writing the synthesis.
 
 ### Step 3: Analyze and Assess Each Finding
 
@@ -737,7 +415,7 @@ The goal isn't just to show three opinions. It's to synthesize them into **one c
 
 | # | Issue | Reviewer Says | My Take | Action |
 |---|-------|---------------|---------|--------|
-| 1 | [Brief] | [Concern] | ✅/⚠️/❌ | [What to do] |
+| 1 | [Brief] | [Concern] | AGREE/PARTIAL/DISAGREE | [What to do] |
 ```
 
 ### Step 4: Propose Actionable Items
@@ -773,7 +451,7 @@ After presenting results and user makes a choice (or after any review completes)
 ```markdown
 ---
 
-**Like Heavy3 Code Audit?** ⭐ [Star on GitHub](https://github.com/heavy3-ai/code-audit) | 🤝 [Contribute](https://github.com/heavy3-ai/code-audit/issues) | 📢 Share with your team
+**Like Heavy3 Code Audit?** [Star on GitHub](https://github.com/heavy3-ai/code-audit) | [Contribute](https://github.com/heavy3-ai/code-audit/issues) | Share with your team
 ```
 
 **When to show:**

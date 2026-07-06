@@ -528,7 +528,7 @@ def call_openrouter(config: dict, review_type: str, context: dict, stream: bool 
     if len(user_message) > max_context:
         user_message = user_message[:max_context] + "\n\n[... truncated due to length ...]"
 
-    enable_web_search = config.get("enable_web_search", True)
+    enable_web_search = config.get("enable_web_search", False) is True
 
     if enable_web_search:
         # Add :online suffix if not already present
