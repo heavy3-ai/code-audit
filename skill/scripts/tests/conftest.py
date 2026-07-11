@@ -309,7 +309,7 @@ def council_all_success():
         {
             "role": "correctness",
             "name": "Correctness Expert",
-            "model": "openai/gpt-5.5:online",
+            "model": "openai/gpt-5.6-sol:online",
             "content": "## Correctness Assessment\nNo bugs found.\n\n## Issues Found\nNone.\n\n## Edge Cases to Consider\n- Empty input handling",
             "elapsed_ms": 2500,
             "tokens": {"input": 1500, "output": 200}
@@ -317,7 +317,7 @@ def council_all_success():
         {
             "role": "security",
             "name": "Security Analyst",
-            "model": "x-ai/grok-4.20-beta:online",
+            "model": "x-ai/grok-4.5:online",
             "content": "## Security Assessment\nNo vulnerabilities.\n\n## Vulnerabilities Found\nNone.\n\n## Security Recommendations\n- Add input sanitization",
             "elapsed_ms": 3000,
             "tokens": {"input": 1500, "output": 220}
@@ -340,7 +340,7 @@ def council_one_failure():
         {
             "role": "correctness",
             "name": "Correctness Expert",
-            "model": "openai/gpt-5.5:online",
+            "model": "openai/gpt-5.6-sol:online",
             "content": "## Correctness Assessment\nNo bugs found.",
             "elapsed_ms": 2500,
             "tokens": {"input": 1500, "output": 200}
@@ -348,7 +348,7 @@ def council_one_failure():
         {
             "role": "security",
             "name": "Security Analyst",
-            "model": "x-ai/grok-4.20-beta:online",
+            "model": "x-ai/grok-4.5:online",
             "content": "ERROR: Request timed out (after 3 retries)",
             "elapsed_ms": 180000,
             "error": "Request timed out"
