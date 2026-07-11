@@ -109,6 +109,8 @@ MODEL_PRICING = {
     "z-ai/glm-5:online": {"input": 1.00, "output": 3.20},
     "moonshotai/kimi-k2.5": {"input": 0.50, "output": 2.80},
     "moonshotai/kimi-k2.5:online": {"input": 0.50, "output": 2.80},
+    "openai/gpt-5.6-sol": {"input": 5.00, "output": 30.00},
+    "openai/gpt-5.6-sol:online": {"input": 5.00, "output": 30.00},
     "openai/gpt-5.5": {"input": 5.00, "output": 30.00},
     "openai/gpt-5.5:online": {"input": 5.00, "output": 30.00},
     "openai/gpt-5.4": {"input": 2.50, "output": 15.00},
@@ -119,6 +121,8 @@ MODEL_PRICING = {
     "google/gemini-3-pro-preview:online": {"input": 2.00, "output": 12.00},
     "google/gemini-3.1-pro-preview": {"input": 2.00, "output": 12.00},
     "google/gemini-3.1-pro-preview:online": {"input": 2.00, "output": 12.00},
+    "x-ai/grok-4.5": {"input": 2.00, "output": 6.00},
+    "x-ai/grok-4.5:online": {"input": 2.00, "output": 6.00},
     "x-ai/grok-4.20-beta": {"input": 2.00, "output": 6.00},
     "x-ai/grok-4.20-beta:online": {"input": 2.00, "output": 6.00},
     "x-ai/grok-4": {"input": 3.00, "output": 15.00},
@@ -648,8 +652,8 @@ def call_openrouter(config: dict, review_type: str, context: dict, stream: bool 
 
 
 MODEL_SHORTCUTS = {
-    "gpt": "openai/gpt-5.5",
-    "premium": "openai/gpt-5.5",
+    "gpt": "openai/gpt-5.6-sol",
+    "premium": "openai/gpt-5.6-sol",
     "glm": "z-ai/glm-5",
     "standard": "deepseek/deepseek-v4-pro",
     "std": "deepseek/deepseek-v4-pro",
@@ -679,7 +683,7 @@ def main():
     parser.add_argument("--context-file", required=True,
                         help="Path to JSON file with review context")
     parser.add_argument("--model", "-m", default=None,
-                        help="Model to use: 'gpt'/'premium' (GPT 5.5), 'deepseek'/'std' (DeepSeek V4 Pro), 'glm', 'kimi', 'free', or full OpenRouter model ID")
+                        help="Model to use: 'gpt'/'premium' (GPT 5.6 Sol), 'deepseek'/'std' (DeepSeek V4 Pro), 'glm', 'kimi', 'free', or full OpenRouter model ID")
     parser.add_argument("--no-stream", action="store_true",
                         help="Disable streaming (wait for full response)")
 

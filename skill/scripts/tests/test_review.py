@@ -105,10 +105,10 @@ class TestModelResolution:
     """Tests for model shortcut resolution."""
 
     def test_resolve_gpt_shortcut(self, temp_config):
-        """Verify 'gpt' resolves to GPT 5.5."""
+        """Verify 'gpt' resolves to GPT 5.6 Sol."""
         _, config = temp_config
         model = resolve_model("gpt", config)
-        assert model == "openai/gpt-5.5"
+        assert model == "openai/gpt-5.6-sol"
 
     def test_resolve_deepseek_shortcut(self, temp_config):
         """Verify 'deepseek' resolves to DeepSeek V4 Pro."""
@@ -137,8 +137,8 @@ class TestModelResolution:
     def test_resolve_case_insensitive(self, temp_config):
         """Verify shortcuts are case-insensitive."""
         _, config = temp_config
-        assert resolve_model("GPT", config) == "openai/gpt-5.5"
-        assert resolve_model("Gpt", config) == "openai/gpt-5.5"
+        assert resolve_model("GPT", config) == "openai/gpt-5.6-sol"
+        assert resolve_model("Gpt", config) == "openai/gpt-5.6-sol"
         assert resolve_model("DEEPSEEK", config) == "deepseek/deepseek-v4-pro"
 
 
