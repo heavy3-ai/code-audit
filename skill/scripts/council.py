@@ -78,6 +78,18 @@ DEFAULT_COUNCIL_MODELS = {
     "security": "x-ai/grok-4.5",
 }
 
+# Tier 2 council: same three roles, open-weight models only.
+# Measured 2026-08-06 on openrouter.ai (20K in / 6K out per member):
+#   tier 1 ~= $1.37/run   vs   tier 2 ~= $0.19/run   (~7x cheaper)
+# Intended for changes that are risky enough to want more than one reviewer,
+# but not risky enough to justify a frontier council.
+# Override via config.json "council_models_tier2".
+DEFAULT_COUNCIL_MODELS_TIER2 = {
+    "correctness": "deepseek/deepseek-v4-pro",
+    "performance": "z-ai/glm-5.2",
+    "security": "moonshotai/kimi-k3",
+}
+
 CODE_PROMPTS = {
     "correctness": """You are "The Correctness Expert" reviewing code changes.
 Your Role: Provide accurate, direct review of the code changes.
@@ -487,20 +499,25 @@ def call_reviewer(role: str, model: str, name: str, user_message: str,
         }
 
 
-def get_council_config(config: dict, council_type: str) -> list:
+def get_council_config(config: dict, council_type: str, tier: int = 1) -> list:
     """
     Build council configuration from config.json or use defaults.
 
     Args:
         config: Loaded config dictionary
         council_type: "code" or "plan"
+        tier: 1 = frontier council (default), 2 = cheaper open-weight council
 
     Returns:
         List of council member configurations
     """
     # Get configured models (if any), merge with defaults
-    council_models = config.get("council_models", {})
-    models = {**DEFAULT_COUNCIL_MODELS, **council_models}
+    if tier == 2:
+        council_models = config.get("council_models_tier2", {})
+        models = {**DEFAULT_COUNCIL_MODELS_TIER2, **council_models}
+    else:
+        council_models = config.get("council_models", {})
+        models = {**DEFAULT_COUNCIL_MODELS, **council_models}
 
     # Check if web search is enabled (must be boolean true, not truthy string)
     enable_web_search = config.get("enable_web_search", False) is True
@@ -549,14 +566,14 @@ def get_council_config(config: dict, council_type: str) -> list:
         ]
 
 
-def run_council(context: dict, review_type: str) -> dict:
+def run_council(context: dict, review_type: str, tier: int = 1) -> dict:
     config = load_config()
     api_key = get_api_key()
     reasoning = config.get("reasoning", "high")
     max_output_tokens = config.get("max_output_tokens", 8192)
 
     council_type = "plan" if review_type == "plan" else "code"
-    council = get_council_config(config, council_type)
+    council = get_council_config(config, council_type, tier)
 
     user_message = build_user_message(context, review_type)
 
@@ -572,7 +589,10 @@ def run_council(context: dict, review_type: str) -> dict:
 
     # Show clear progress header
     print("\n" + "=" * 50, file=sys.stderr)
-    print("Heavy3 Council (Sponsored by Heavy3.ai)", file=sys.stderr)
+    if tier == 2:
+        print("Heavy3 Council — TIER 2 (open-weight, ~7x cheaper)", file=sys.stderr)
+    else:
+        print("Heavy3 Council (Sponsored by Heavy3.ai)", file=sys.stderr)
     print("=" * 50, file=sys.stderr)
     print(f"Starting parallel review with:", file=sys.stderr)
     for member in council:
@@ -621,6 +641,7 @@ def run_council(context: dict, review_type: str) -> dict:
         "metadata": {
             "total_ms": int((time.time() - start) * 1000),
             "council_type": council_type,
+            "tier": tier,
         }
     }
 
@@ -629,13 +650,17 @@ def main():
     parser = argparse.ArgumentParser(description="Heavy3 Code Audit Council (Sponsored by Heavy3.ai)")
     parser.add_argument("--type", choices=["plan", "code", "pr"], required=True)
     parser.add_argument("--context-file", required=True)
+    parser.add_argument("--tier", type=int, choices=[1, 2], default=1,
+                        help="1 = frontier council (default, ~$1.37/run). "
+                             "2 = open-weight council (~$0.19/run), for changes that warrant "
+                             "more than one reviewer but not a frontier council.")
 
     args = parser.parse_args()
 
     with open(args.context_file) as f:
         context = json.load(f)
 
-    result = run_council(context, args.type)
+    result = run_council(context, args.type, args.tier)
     print(json.dumps(result, indent=2))
 
 

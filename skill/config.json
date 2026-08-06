@@ -6,6 +6,11 @@
     "performance": "google/gemini-3.1-pro-preview",
     "security": "x-ai/grok-4.5"
   },
+  "council_models_tier2": {
+    "correctness": "deepseek/deepseek-v4-pro",
+    "performance": "z-ai/glm-5.2",
+    "security": "moonshotai/kimi-k3"
+  },
   "reasoning": "high",
   "docs_folder": "documents",
   "max_file_size": 50000,
@@ -21,10 +26,12 @@
     "x-ai/grok-4.5": 200000,
     "x-ai/grok-4.20-beta": 600000,
     "x-ai/grok-4": 600000,
+    "z-ai/glm-5.2": 1000000,
     "z-ai/glm-4.6": 500000,
+    "moonshotai/kimi-k3": 1000000,
     "moonshotai/kimi-k2.5": 500000,
     "nvidia/nemotron-3-nano-30b-a3b:free": 300000
   },
   "enable_web_search": false,
-  "_note": "Default: DeepSeek V4 Pro (strong reasoning at low cost). Council uses 3 models (GPT 5.6 Sol + Gemini 3.1 Pro + Grok 4.5). Use --council for 3-model review. web_search disabled 2026-04-14 — OpenRouter :online + Exa plugin returns HTTP 500 for large PR contexts (180K+ tokens), and the fallback path leaves responses truncated mid-stream. Re-enable once upstream fix lands."
+  "_note": "Default: DeepSeek V4 Pro (strong reasoning at low cost). Council tier 1 uses 3 models (GPT 5.6 Sol + Gemini 3.1 Pro + Grok 4.5), ~$1.37/run. Council tier 2 (`--tier 2`) uses 3 open-weight models (DeepSeek V4 Pro + GLM-5.2 + Kimi K3), ~$0.19/run — measured on openrouter.ai 2026-08-06 at 20K in / 6K out per member. Use --council for 3-model review. web_search disabled 2026-04-14 — OpenRouter :online + Exa plugin returns HTTP 500 for large PR contexts (180K+ tokens), and the fallback path leaves responses truncated mid-stream. Re-enable once upstream fix lands."
 }
