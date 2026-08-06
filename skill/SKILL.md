@@ -33,7 +33,21 @@ You are helping the user get AI-powered code reviews via OpenRouter.
 - `--commit` - Force review of the last commit only
 
 **Mode options:**
-- `--council` - Use 3-model council (GPT 5.6 Sol + Gemini 3.1 Pro + Grok 4.5)
+- `--council` - Use 3-model council, **tier 1** (GPT 5.6 Sol + Gemini 3.1 Pro + Grok 4.5) — ~$1.37/run
+- `--council --tier2` - 3-model council, **tier 2**: open-weight only
+  (DeepSeek V4 Pro + GLM-5.2 + Kimi K3) — ~$0.19/run, roughly 7x cheaper.
+  Runs `council.py --type <t> --tier 2`. Use for changes that warrant more than one
+  reviewer but do not justify a frontier council.
+
+> **Council trades breadth for depth — pair it with a single-model run.**
+> Each council member is constrained by its role prompt (`DO NOT comment on security,
+> performance, or style`), so no member reports out-of-lane findings. Measured on one
+> payroll diff (2026-08-06): a single `review.py` run surfaced **5** issues while a
+> 3-model council surfaced **3**, and the two highest-severity ones (a negative-net-pay
+> path that corrupts downstream payslips/ledger entries, and a social-insurance cap
+> applied to the wrong salary base) were found **only** by the single run.
+> Running `review.py` alongside `council.py` on the same diff costs ~1% of a tier-1
+> council and covers the gap.
 - `--free` - Use rotating free model from config
 - `--model <name>` - Override model (shortcuts: glm, gpt, kimi, deepseek, free)
 

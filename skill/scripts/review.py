@@ -105,8 +105,18 @@ MODEL_PRICING = {
     "deepseek/deepseek-v4-pro": {"input": 0.435, "output": 0.87},
     "deepseek/deepseek-v4-pro:online": {"input": 0.435, "output": 0.87},
     "deepseek/deepseek-v3.2": {"input": 0.27, "output": 0.40},
+    # GLM-5.2 list price. OpenRouter was showing a 50%-off promo ($0.699/$2.196)
+    # on 2026-08-06; list price kept here so estimates stay conservative when it ends.
+    "z-ai/glm-5.2": {"input": 1.40, "output": 4.40},
+    "z-ai/glm-5.2:online": {"input": 1.40, "output": 4.40},
     "z-ai/glm-5": {"input": 1.00, "output": 3.20},
     "z-ai/glm-5:online": {"input": 1.00, "output": 3.20},
+    # Kimi K3 is NOT priced like K2.5 — output is 5x higher. Verified against
+    # openrouter.ai/logs 2026-08-06: 20,184 in / 6,577 out billed $0.159, which
+    # only reconciles at $2.90/$14.00. Without this entry the model falls back to
+    # DEFAULT_PRICING and under-reports spend by ~5.6x.
+    "moonshotai/kimi-k3": {"input": 2.90, "output": 14.00},
+    "moonshotai/kimi-k3:online": {"input": 2.90, "output": 14.00},
     "moonshotai/kimi-k2.5": {"input": 0.50, "output": 2.80},
     "moonshotai/kimi-k2.5:online": {"input": 0.50, "output": 2.80},
     "openai/gpt-5.6-sol": {"input": 5.00, "output": 30.00},

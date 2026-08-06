@@ -18,6 +18,7 @@ from council import (
     call_reviewer,
     get_council_config,
     DEFAULT_COUNCIL_MODELS,
+    DEFAULT_COUNCIL_MODELS_TIER2,
     CODE_PROMPTS,
     PLAN_PROMPTS,
     OPENROUTER_URL
@@ -87,6 +88,60 @@ class TestCouncilModels:
         assert models_by_role["security"] == "custom/model-2"
         # Performance should still use default
         assert models_by_role["performance"] == DEFAULT_COUNCIL_MODELS["performance"]
+
+
+class TestCouncilTier2:
+    """Tests for the tier 2 (open-weight) council."""
+
+    def test_tier2_uses_tier2_defaults(self):
+        """Verify tier=2 selects the tier 2 model set, not the tier 1 one."""
+        council = get_council_config({"enable_web_search": False}, "code", 2)
+        models_by_role = {m["role"]: m["model"] for m in council}
+        for role, model in DEFAULT_COUNCIL_MODELS_TIER2.items():
+            assert models_by_role[role] == model
+
+    def test_tier1_is_the_default(self):
+        """Verify omitting tier keeps the existing tier 1 behaviour."""
+        explicit = get_council_config({"enable_web_search": False}, "code", 1)
+        implicit = get_council_config({"enable_web_search": False}, "code")
+        assert [m["model"] for m in explicit] == [m["model"] for m in implicit]
+        assert [m["model"] for m in implicit] == [
+            DEFAULT_COUNCIL_MODELS[m["role"]] for m in implicit
+        ]
+
+    def test_tier2_has_same_roles_and_size(self):
+        """Verify tier 2 keeps the 3-role shape for both council types."""
+        for council_type in ["code", "plan"]:
+            tier1 = get_council_config({"enable_web_search": False}, council_type, 1)
+            tier2 = get_council_config({"enable_web_search": False}, council_type, 2)
+            assert len(tier2) == 3
+            assert [m["role"] for m in tier2] == [m["role"] for m in tier1]
+
+    def test_config_overrides_tier2_defaults(self):
+        """Verify config.json council_models_tier2 overrides tier 2 defaults."""
+        custom_config = {
+            "council_models_tier2": {"correctness": "custom/cheap-1"},
+            "enable_web_search": False,
+        }
+        models_by_role = {
+            m["role"]: m["model"]
+            for m in get_council_config(custom_config, "code", 2)
+        }
+        assert models_by_role["correctness"] == "custom/cheap-1"
+        # Untouched roles fall back to the tier 2 defaults
+        assert models_by_role["security"] == DEFAULT_COUNCIL_MODELS_TIER2["security"]
+
+    def test_tier1_config_does_not_leak_into_tier2(self):
+        """Verify council_models (tier 1) never affects a tier 2 run."""
+        config = {
+            "council_models": {"correctness": "tier1/only"},
+            "enable_web_search": False,
+        }
+        models_by_role = {
+            m["role"]: m["model"]
+            for m in get_council_config(config, "code", 2)
+        }
+        assert models_by_role["correctness"] == DEFAULT_COUNCIL_MODELS_TIER2["correctness"]
 
 
 class TestCouncilPrompts:
