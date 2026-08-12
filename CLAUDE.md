@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Heavy3 Code Audit (`/h3`) is a Claude Code skill providing AI-powered multi-model code reviews via OpenRouter. Modes:
 - **Single (default)**: DeepSeek V4 Pro, up to 200K tokens
-- **Council**: 3-model parallel review (GPT 5.6 Sol + Gemini 3.1 Pro + Grok 4.5), up to 200K tokens
+- **Council**: 3-model parallel review (GPT 5.6 Sol + Gemini 3.1 Pro + Grok 4.6), up to 200K tokens
 - **Free**: Rotating free models from OpenRouter
 
 ## Local Development Setup
