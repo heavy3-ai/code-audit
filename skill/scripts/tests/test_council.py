@@ -88,6 +88,19 @@ class TestCouncilModels:
         # Performance should still use default
         assert models_by_role["performance"] == DEFAULT_COUNCIL_MODELS["performance"]
 
+    def test_every_default_council_model_has_pricing(self):
+        """Every default council model must be priced, or --council silently reports $0.
+
+        MODEL_PRICING is keyed by exact slug, and estimate_cost falls back to 0 for an
+        unknown key. Bumping a council model without adding its pricing row is therefore
+        a silent cost-reporting bug, not a crash — this catches it at the next version bump.
+        """
+        from review import MODEL_PRICING
+
+        for role, slug in DEFAULT_COUNCIL_MODELS.items():
+            assert slug in MODEL_PRICING, f"{role} model {slug} has no MODEL_PRICING entry"
+            assert f"{slug}:online" in MODEL_PRICING, f"{slug} missing its :online pricing row"
+
 
 class TestCouncilPrompts:
     """Tests for council system prompts."""

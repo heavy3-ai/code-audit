@@ -121,6 +121,10 @@ MODEL_PRICING = {
     "google/gemini-3-pro-preview:online": {"input": 2.00, "output": 12.00},
     "google/gemini-3.1-pro-preview": {"input": 2.00, "output": 12.00},
     "google/gemini-3.1-pro-preview:online": {"input": 2.00, "output": 12.00},
+    "x-ai/grok-4.6": {"input": 2.00, "output": 6.00},
+    "x-ai/grok-4.6:online": {"input": 2.00, "output": 6.00},
+    # Grok 4.5 superseded by 4.6 as the Security Analyst; same rate. Kept so a pinned
+    # 4.5 in config.json and prior runs' cost figures still resolve.
     "x-ai/grok-4.5": {"input": 2.00, "output": 6.00},
     "x-ai/grok-4.5:online": {"input": 2.00, "output": 6.00},
     "x-ai/grok-4.20-beta": {"input": 2.00, "output": 6.00},

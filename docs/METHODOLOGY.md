@@ -24,7 +24,7 @@ After council review, Claude synthesizes all findings into a **3-column comparis
 
 **Example output:**
 
-| Aspect | Correctness (GPT 5.6 Sol) | Performance (Gemini 3.1) | Security (Grok 4.5) |
+| Aspect | Correctness (GPT 5.6 Sol) | Performance (Gemini 3.1) | Security (Grok 4.6) |
 |--------|----------------------|----------------------|---------------------|
 | **Focus** | Bugs, Logic, Edge Cases | Scaling, Memory, N+1 | Vulnerabilities, Auth |
 | **Findings** | ❌ Null check missing | ⚠️ Potential N+1 query | ✅ No issues found |
@@ -53,11 +53,11 @@ Three specialized reviewers, each with web search:
 |------|-------|-------|--------|
 | **Correctness Expert** | GPT 5.6 Sol | Bugs, logic errors, edge cases, race conditions | Bing |
 | **Performance Critic** | Gemini 3.1 Pro | N+1 queries, memory leaks, scaling bottlenecks | Exa |
-| **Security Analyst** | Grok 4.5 | Vulnerabilities, auth issues, data exposure | Exa |
+| **Security Analyst** | Grok 4.6 | Vulnerabilities, auth issues, data exposure | Exa |
 
-**Why Grok 4.5 for Security?**
+**Why Grok 4.6 for Security?**
 
-Grok 4.5 serves as Security Analyst; the Grok line was chosen for the security role based on independent benchmarks (measured on Grok 4 / 4.1):
+Grok 4.6 serves as Security Analyst; the Grok line was chosen for the security role based on independent benchmarks (measured on Grok 4 / 4.1):
 
 | Benchmark | Score | Source |
 |-----------|-------|--------|
@@ -72,7 +72,7 @@ The Kilo AI test specifically evaluated Grok 4 on prototype pollution, agentic A
 
 | Pillar | Implementation | Benefit |
 |--------|---------------|---------|
-| **Different Models** | GPT 5.6 Sol + Gemini 3.1 Pro + Grok 4.5 | Different training data, different blind spots |
+| **Different Models** | GPT 5.6 Sol + Gemini 3.1 Pro + Grok 4.6 | Different training data, different blind spots |
 | **Specialized Roles** | Correctness + Performance + Security | Forces comprehensive coverage |
 | **Different Search Sources** | Bing + Exa | Facts verified across independent indexes |
 
