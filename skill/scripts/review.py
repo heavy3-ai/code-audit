@@ -109,6 +109,10 @@ MODEL_PRICING = {
     "z-ai/glm-5:online": {"input": 1.00, "output": 3.20},
     "moonshotai/kimi-k2.5": {"input": 0.50, "output": 2.80},
     "moonshotai/kimi-k2.5:online": {"input": 0.50, "output": 2.80},
+    # GPT 6 Sol (2026-09-22) replaces 5.6 Sol as the Correctness Expert at half the price or better.
+    "openai/gpt-6-sol": {"input": 2.00, "output": 10.00},
+    "openai/gpt-6-sol:online": {"input": 2.00, "output": 10.00},
+    # 5.6 Sol rows kept so a pinned 5.6 in config.json and prior runs' cost figures still resolve.
     "openai/gpt-5.6-sol": {"input": 5.00, "output": 30.00},
     "openai/gpt-5.6-sol:online": {"input": 5.00, "output": 30.00},
     "openai/gpt-5.5": {"input": 5.00, "output": 30.00},
@@ -121,6 +125,11 @@ MODEL_PRICING = {
     "google/gemini-3-pro-preview:online": {"input": 2.00, "output": 12.00},
     "google/gemini-3.1-pro-preview": {"input": 2.00, "output": 12.00},
     "google/gemini-3.1-pro-preview:online": {"input": 2.00, "output": 12.00},
+    # Grok 4.7 (2026-09-21) replaces 4.6 as the Security Analyst. This tool calls OpenRouter, which lists
+    # 4.7 at $1.60 / $4.80 (xAI's own list price is $2 / $6).
+    "x-ai/grok-4.7": {"input": 1.60, "output": 4.80},
+    "x-ai/grok-4.7:online": {"input": 1.60, "output": 4.80},
+    # Grok 4.6 superseded by 4.7; kept so a pinned 4.6 and prior runs' cost figures still resolve.
     "x-ai/grok-4.6": {"input": 2.00, "output": 6.00},
     "x-ai/grok-4.6:online": {"input": 2.00, "output": 6.00},
     # Grok 4.5 superseded by 4.6 as the Security Analyst; same rate. Kept so a pinned
@@ -656,8 +665,8 @@ def call_openrouter(config: dict, review_type: str, context: dict, stream: bool 
 
 
 MODEL_SHORTCUTS = {
-    "gpt": "openai/gpt-5.6-sol",
-    "premium": "openai/gpt-5.6-sol",
+    "gpt": "openai/gpt-6-sol",
+    "premium": "openai/gpt-6-sol",
     "glm": "z-ai/glm-5",
     "standard": "deepseek/deepseek-v4-pro",
     "std": "deepseek/deepseek-v4-pro",
