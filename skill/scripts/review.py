@@ -138,8 +138,15 @@ MODEL_PRICING = {
     "x-ai/grok-4.5:online": {"input": 2.00, "output": 6.00},
     "x-ai/grok-4.20-beta": {"input": 2.00, "output": 6.00},
     "x-ai/grok-4.20-beta:online": {"input": 2.00, "output": 6.00},
+    "x-ai/grok-4.20": {"input": 1.25, "output": 2.50},
+    "x-ai/grok-4.20:online": {"input": 1.25, "output": 2.50},
     "x-ai/grok-4": {"input": 3.00, "output": 15.00},
     "x-ai/grok-4:online": {"input": 3.00, "output": 15.00},
+    # Anthropic rows back the council.py fallback note (a Claude seat when xAI is not an allowed provider).
+    "anthropic/claude-sonnet-4.6": {"input": 3.00, "output": 15.00},
+    "anthropic/claude-sonnet-4.6:online": {"input": 3.00, "output": 15.00},
+    "anthropic/claude-opus-4.7": {"input": 5.00, "output": 25.00},
+    "anthropic/claude-opus-4.7:online": {"input": 5.00, "output": 25.00},
     "nvidia/nemotron-3-nano-30b-a3b:free": {"input": 0.0, "output": 0.0},
 }
 

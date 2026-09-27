@@ -72,6 +72,17 @@ def retry_with_backoff(func, role_name="API", max_retries=MAX_RETRIES):
 
 # Default council models (can be overridden via config.json "council_models")
 # Web search is controlled by config.json "enable_web_search"
+#
+# Provider note: each role uses a different vendor so the council
+# represents three independent training pipelines.
+#
+# If a model 404s with "No allowed providers are available for the
+# selected model", the OpenRouter account has a provider allow-list
+# (Settings → Preferences → Allowed Providers) that excludes the
+# vendor owning that model — e.g., x-ai/* requires xAI to be enabled.
+# Fix at the account level, OR override with config.json's
+# "council_models" key (e.g., set security to anthropic/claude-sonnet-4.6
+# if you can't enable xAI).
 DEFAULT_COUNCIL_MODELS = {
     "correctness": "openai/gpt-6-sol",
     "performance": "google/gemini-3.1-pro-preview",
@@ -397,6 +408,80 @@ def extract_content(result: dict) -> str:
         return f"ERROR: Unexpected response format: {e}"
 
 
+def _structural_summary(user_message: str) -> str:
+    """Replace raw code diffs in ``user_message`` with a structural summary.
+
+    Used as a fallback when an upstream model (notably Gemini's safety
+    filter) returns empty content on a regex/pattern-heavy diff. The
+    summary keeps the developer-intent + file listings + line counts
+    but drops the actual code. Tradeoff: the reviewer loses fidelity
+    but gets *something* instead of an empty response.
+    """
+
+    import re as _re
+
+    # Find every ```diff ... ``` and ```python ... ``` fenced block,
+    # replace its body with a one-line summary.
+    def _replace_fence(match: "_re.Match[str]") -> str:
+        body = match.group(2)
+        lang = match.group(1) or ""
+        lines = body.splitlines()
+        added = sum(1 for ln in lines if ln.startswith("+") and not ln.startswith("+++"))
+        removed = sum(1 for ln in lines if ln.startswith("-") and not ln.startswith("---"))
+        # Pluck file paths from diff headers.
+        files = sorted({
+            _re.sub(r"^[+-]{3}\s+[ab]/", "", ln).strip()
+            for ln in lines
+            if ln.startswith("+++") or ln.startswith("---")
+        })
+        if not files:
+            # Plain file-content fence (no diff headers): report its size only.
+            return (
+                f"```\n"
+                f"[CODE SUMMARY - original {lang} fence redacted on retry: "
+                f"{len(lines)} lines]\n"
+                f"```"
+            )
+        files_str = ", ".join(files[:12])
+        if len(files) > 12:
+            files_str += f", ... (+{len(files) - 12} more)"
+        return (
+            f"```\n"
+            f"[CODE SUMMARY - original {lang} fence redacted on retry: "
+            f"+{added}/-{removed} lines across {len(files)} file(s): "
+            f"{files_str}]\n"
+            f"```"
+        )
+
+    summary = _re.sub(
+        r"```(\w+)?\n(.*?)\n```",
+        _replace_fence,
+        user_message,
+        flags=_re.DOTALL,
+    )
+    # Add a header note so the reviewer knows what's missing.
+    return (
+        "# RETRY: the original message contained code/diff content that "
+        "the model returned empty for (likely safety-filter on a regex-"
+        "heavy or pattern-heavy payload). The code fences below have "
+        "been replaced with file-level summaries. Review the intent + "
+        "file list and respond at the appropriate confidence level.\n\n"
+        + summary
+    )
+
+
+def _looks_like_safety_filter_response(content: str) -> bool:
+    """True when content matches the empty/blocked patterns from ``extract_content``."""
+
+    if not content:
+        return True
+    return content.startswith((
+        "ERROR: Empty content",
+        "ERROR: Content blocked",
+        "ERROR: No choices",
+    ))
+
+
 def call_reviewer(role: str, model: str, name: str, user_message: str,
                   review_type: str, api_key: str, reasoning: str,
                   search_engine: str = None,
@@ -442,17 +527,67 @@ def call_reviewer(role: str, model: str, name: str, user_message: str,
     try:
         resp = retry_with_backoff(make_request, role_name=name)
         result = resp.json()
-        elapsed_ms = int((time.time() - start) * 1000)
+        content = extract_content(result)
+        # Both calls are billed, so the summary retry adds to these rather than replacing them.
+        input_tokens = result.get("usage", {}).get("prompt_tokens", 0)
+        output_tokens = result.get("usage", {}).get("completion_tokens", 0)
+
+        # Retry with structural summary if the response looks like the
+        # safety filter fired on the diff (recurring Gemini failure on
+        # regex-heavy or pattern-heavy code reviews). The retry trades
+        # fidelity for a non-empty response.
+        retry_summary_used = False
+        if _looks_like_safety_filter_response(content):
+            print(
+                f"[{name}] Empty/filtered response - retrying with "
+                "structural summary in place of raw diff",
+                file=sys.stderr,
+            )
+            summary_message = _structural_summary(user_message)
+            retry_payload = dict(payload)
+            retry_payload["messages"] = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": summary_message},
+            ]
+            retry_payload.pop("plugins", None)
+
+            def make_retry_request():
+                resp2 = requests.post(OPENROUTER_URL, headers=headers,
+                                      json=retry_payload, timeout=180)
+                resp2.raise_for_status()
+                return resp2
+
+            try:
+                retry_resp = retry_with_backoff(make_retry_request, role_name=f"{name}-retry")
+                retry_result = retry_resp.json()
+                retry_content = extract_content(retry_result)
+                input_tokens += retry_result.get("usage", {}).get("prompt_tokens", 0)
+                output_tokens += retry_result.get("usage", {}).get("completion_tokens", 0)
+                if not _looks_like_safety_filter_response(retry_content):
+                    content = (
+                        "[Retried with structural summary in place of "
+                        "raw diff after the original response was empty / "
+                        "safety-filtered. Findings below are based on file-"
+                        "level summaries, not the full code.]\n\n"
+                        + retry_content
+                    )
+                    retry_summary_used = True
+            except Exception as retry_exc:
+                print(
+                    f"[{name}] Summary retry also failed: {retry_exc}",
+                    file=sys.stderr,
+                )
 
         return {
             "role": role,
             "name": name,
             "model": model,
-            "content": extract_content(result),
-            "elapsed_ms": elapsed_ms,
+            "content": content,
+            "elapsed_ms": int((time.time() - start) * 1000),
+            "retry_summary_used": retry_summary_used,
             "tokens": {
-                "input": result.get("usage", {}).get("prompt_tokens", 0),
-                "output": result.get("usage", {}).get("completion_tokens", 0),
+                "input": input_tokens,
+                "output": output_tokens,
             }
         }
     except Exception as e:
