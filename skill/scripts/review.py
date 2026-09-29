@@ -109,7 +109,10 @@ MODEL_PRICING = {
     "z-ai/glm-5:online": {"input": 1.00, "output": 3.20},
     "moonshotai/kimi-k2.5": {"input": 0.50, "output": 2.80},
     "moonshotai/kimi-k2.5:online": {"input": 0.50, "output": 2.80},
-    # GPT 6 Sol (2026-09-22) replaces 5.6 Sol as the Correctness Expert at half the price or better.
+    # GPT 6.1 Sol (2026-09-29) replaces 6 Sol as the Correctness Expert at the same $2 / $10 (OpenRouter matches list).
+    "openai/gpt-6.1-sol": {"input": 2.00, "output": 10.00},
+    "openai/gpt-6.1-sol:online": {"input": 2.00, "output": 10.00},
+    # GPT 6 Sol (2026-09-22) replaced 5.6 Sol; kept so a pinned 6 Sol and prior runs' cost figures still resolve.
     "openai/gpt-6-sol": {"input": 2.00, "output": 10.00},
     "openai/gpt-6-sol:online": {"input": 2.00, "output": 10.00},
     # 5.6 Sol rows kept so a pinned 5.6 in config.json and prior runs' cost figures still resolve.
@@ -665,8 +668,8 @@ def call_openrouter(config: dict, review_type: str, context: dict, stream: bool 
 
 
 MODEL_SHORTCUTS = {
-    "gpt": "openai/gpt-6-sol",
-    "premium": "openai/gpt-6-sol",
+    "gpt": "openai/gpt-6.1-sol",
+    "premium": "openai/gpt-6.1-sol",
     "glm": "z-ai/glm-5",
     "standard": "deepseek/deepseek-v4-pro",
     "std": "deepseek/deepseek-v4-pro",
