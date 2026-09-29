@@ -242,7 +242,7 @@ single_cost = (input_tokens * 0.435 + output_tokens * 0.87) / 1_000_000
 
 # Council mode (all 3 models in parallel: GPT 6.1 Sol + Gemini 3.1 Pro + Grok 4.7)
 council_cost = (input_tokens * (2.00 + 2.00 + 1.60) + output_tokens * (10 + 12 + 4.80)) / 1_000_000
-             ≈ input_tokens * 9.00/M + output_tokens * 48/M
+             ≈ input_tokens * 5.60/M + output_tokens * 26.80/M
 ```
 
 ### Display Cost Estimate and Confirm

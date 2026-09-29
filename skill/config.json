@@ -30,5 +30,5 @@
     "nvidia/nemotron-3-nano-30b-a3b:free": 300000
   },
   "enable_web_search": false,
-  "_note": "Default: DeepSeek V4 Pro (strong reasoning at low cost). Council uses 3 models (GPT 5.6 Sol + Gemini 3.1 Pro + Grok 4.6). Use --council for 3-model review. web_search disabled 2026-04-14 — OpenRouter :online + Exa plugin returns HTTP 500 for large PR contexts (180K+ tokens), and the fallback path leaves responses truncated mid-stream. Re-enable once upstream fix lands."
+  "_note": "Default: DeepSeek V4 Pro (strong reasoning at low cost). Council uses 3 models (GPT 6.1 Sol + Gemini 3.1 Pro + Grok 4.7). Use --council for 3-model review. web_search disabled 2026-04-14 — OpenRouter :online + Exa plugin returns HTTP 500 for large PR contexts (180K+ tokens), and the fallback path leaves responses truncated mid-stream. Re-enable once upstream fix lands."
 }

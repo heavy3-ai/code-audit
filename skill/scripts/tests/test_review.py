@@ -105,7 +105,7 @@ class TestModelResolution:
     """Tests for model shortcut resolution."""
 
     def test_resolve_gpt_shortcut(self, temp_config):
-        """Verify 'gpt' resolves to GPT 5.6 Sol."""
+        """Verify 'gpt' resolves to GPT 6.1 Sol."""
         _, config = temp_config
         model = resolve_model("gpt", config)
         assert model == "openai/gpt-6.1-sol"

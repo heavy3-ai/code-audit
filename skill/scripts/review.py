@@ -699,7 +699,7 @@ def main():
     parser.add_argument("--context-file", required=True,
                         help="Path to JSON file with review context")
     parser.add_argument("--model", "-m", default=None,
-                        help="Model to use: 'gpt'/'premium' (GPT 5.6 Sol), 'deepseek'/'std' (DeepSeek V4 Pro), 'glm', 'kimi', 'free', or full OpenRouter model ID")
+                        help="Model to use: 'gpt'/'premium' (GPT 6.1 Sol), 'deepseek'/'std' (DeepSeek V4 Pro), 'glm', 'kimi', 'free', or full OpenRouter model ID")
     parser.add_argument("--no-stream", action="store_true",
                         help="Disable streaming (wait for full response)")
 
