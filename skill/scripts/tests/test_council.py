@@ -151,7 +151,7 @@ class TestCallReviewer:
 
         result = call_reviewer(
             role="correctness",
-            model="openai/gpt-6-sol:online",
+            model="openai/gpt-6.1-sol:online",
             name="Correctness Expert",
             user_message=user_message,
             review_type="code",
@@ -226,7 +226,7 @@ class TestCallReviewer:
 
         result = call_reviewer(
             role="correctness",
-            model="openai/gpt-6-sol:online",
+            model="openai/gpt-6.1-sol:online",
             name="Correctness Expert",
             user_message=user_message,
             review_type="code",
