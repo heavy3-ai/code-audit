@@ -447,3 +447,71 @@ class TestCouncilOutput:
         roles = [r["role"] for r in result["reviews"]]
         expected_order = ["correctness", "performance", "security"]
         assert roles == expected_order
+
+
+class TestCouncilCost:
+    """Cost and reasoning tokens are captured per reviewer and per council."""
+
+    @responses.activate
+    def test_call_reviewer_records_cost_and_reasoning_tokens(self, mock_api_key, sample_code_context):
+        responses.add(
+            responses.POST,
+            OPENROUTER_URL,
+            json={
+                "choices": [{"message": {"content": "## Assessment\nGood code."}}],
+                "usage": {
+                    "prompt_tokens": 1500,
+                    "completion_tokens": 900,
+                    "completion_tokens_details": {"reasoning_tokens": 700},
+                    "cost": 0.0421,
+                },
+            },
+            status=200,
+        )
+        from council import build_user_message
+        result = call_reviewer(
+            role="correctness",
+            model="openai/gpt-5.6-sol",
+            name="Correctness Expert",
+            user_message=build_user_message(sample_code_context, "code"),
+            review_type="code",
+            api_key="test-key",
+            reasoning="high",
+        )
+        assert result["tokens"] == {"input": 1500, "output": 900, "reasoning": 700, "cost_usd": 0.0421}
+
+    def test_a_response_without_cost_reports_none_not_zero(self):
+        from council import usage_summary
+        assert usage_summary({"usage": {"prompt_tokens": 10}})["cost_usd"] is None
+        assert usage_summary({})["reasoning"] == 0
+
+    def test_council_totals_sum_and_flag_an_incomplete_cost(self):
+        from council import council_totals
+        reviews = [
+            {"tokens": {"input": 100, "output": 50, "reasoning": 30, "cost_usd": 0.02}},
+            {"tokens": {"input": 200, "output": 70, "reasoning": 0, "cost_usd": 0.03}},
+        ]
+        totals = council_totals(reviews)
+        assert totals["input_tokens"] == 300 and totals["reasoning_tokens"] == 30
+        assert totals["cost_usd"] == 0.05 and totals["cost_complete"] is True
+        # A failed reviewer has no tokens: the sum is a lower bound, and says so.
+        totals = council_totals(reviews + [{"error": "boom"}])
+        assert totals["cost_usd"] == 0.05 and totals["cost_complete"] is False
+
+    def test_run_council_puts_the_totals_in_metadata(self, mock_api_key, sample_code_context, temp_pro_config):
+        config_path, config = temp_pro_config
+
+        def fake(*args, **kwargs):
+            return {
+                "role": args[0], "name": args[2], "model": args[1], "content": "ok",
+                "elapsed_ms": 10,
+                "tokens": {"input": 100, "output": 50, "reasoning": 20, "cost_usd": 0.01},
+            }
+
+        with patch('council.load_config', return_value=config):
+            with patch('council.get_api_key', return_value="test-key"):
+                with patch('council.call_reviewer', side_effect=fake):
+                    result = run_council(sample_code_context, "code")
+        meta = result["metadata"]
+        assert meta["cost_usd"] == 0.03 and meta["cost_complete"] is True
+        assert meta["input_tokens"] == 300 and meta["reasoning_tokens"] == 60

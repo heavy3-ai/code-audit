@@ -397,6 +397,40 @@ def extract_content(result: dict) -> str:
         return f"ERROR: Unexpected response format: {e}"
 
 
+def usage_summary(result: dict) -> dict:
+    """Tokens and cost from an OpenRouter response's ``usage`` block.
+
+    ``cost_usd`` is OpenRouter's billed amount (``usage.cost``), or None when the
+    response carries none. ``reasoning`` counts the hidden reasoning tokens, which
+    are billed as output but are not in the review text.
+    """
+    usage = result.get("usage") or {}
+    if not isinstance(usage, dict):
+        usage = {}
+    details = usage.get("completion_tokens_details") or {}
+    cost = usage.get("cost")
+    return {
+        "input": usage.get("prompt_tokens", 0) or 0,
+        "output": usage.get("completion_tokens", 0) or 0,
+        "reasoning": (details.get("reasoning_tokens", 0) or 0) if isinstance(details, dict) else 0,
+        "cost_usd": float(cost) if isinstance(cost, (int, float)) else None,
+    }
+
+
+def council_totals(reviews: list) -> dict:
+    """Summed tokens and cost over the reviews. ``cost_complete`` is False when a
+    review failed or reported no cost, so ``cost_usd`` is then a lower bound."""
+    tokens = [r.get("tokens") or {} for r in reviews]
+    costs = [t.get("cost_usd") for t in tokens]
+    return {
+        "input_tokens": sum(t.get("input", 0) for t in tokens),
+        "output_tokens": sum(t.get("output", 0) for t in tokens),
+        "reasoning_tokens": sum(t.get("reasoning", 0) for t in tokens),
+        "cost_usd": round(sum(c for c in costs if c is not None), 6),
+        "cost_complete": bool(reviews) and all(c is not None for c in costs),
+    }
+
+
 def call_reviewer(role: str, model: str, name: str, user_message: str,
                   review_type: str, api_key: str, reasoning: str,
                   search_engine: str = None,
@@ -450,10 +484,7 @@ def call_reviewer(role: str, model: str, name: str, user_message: str,
             "model": model,
             "content": extract_content(result),
             "elapsed_ms": elapsed_ms,
-            "tokens": {
-                "input": result.get("usage", {}).get("prompt_tokens", 0),
-                "output": result.get("usage", {}).get("completion_tokens", 0),
-            }
+            "tokens": usage_summary(result),
         }
     except Exception as e:
         # On any error with search plugin enabled, retry once without it
@@ -470,10 +501,7 @@ def call_reviewer(role: str, model: str, name: str, user_message: str,
                     "model": model,
                     "content": extract_content(result),
                     "elapsed_ms": elapsed_ms,
-                    "tokens": {
-                        "input": result.get("usage", {}).get("prompt_tokens", 0),
-                        "output": result.get("usage", {}).get("completion_tokens", 0),
-                    }
+                    "tokens": usage_summary(result),
                 }
             except Exception as e2:
                 e = e2  # fall through to error return
@@ -609,8 +637,10 @@ def run_council(context: dict, review_type: str) -> dict:
             reviews.append(result)
 
     total_sec = (time.time() - start)
+    totals = council_totals(reviews)
+    cost_note = "" if totals["cost_complete"] else " (incomplete: a reviewer reported no cost)"
     print("-" * 50, file=sys.stderr)
-    print(f"Council complete in {total_sec:.1f}s", file=sys.stderr)
+    print(f"Council complete in {total_sec:.1f}s, ${totals['cost_usd']:.4f}{cost_note}", file=sys.stderr)
     print("=" * 50 + "\n", file=sys.stderr)
 
     role_order = {r["role"]: i for i, r in enumerate(council)}
@@ -621,6 +651,7 @@ def run_council(context: dict, review_type: str) -> dict:
         "metadata": {
             "total_ms": int((time.time() - start) * 1000),
             "council_type": council_type,
+            **council_totals(reviews),
         }
     }
 
