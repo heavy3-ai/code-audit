@@ -239,6 +239,136 @@ class TestCallReviewer:
         assert result["elapsed_ms"] > 0
 
 
+class TestSafetyFilterRetry:
+    """Tests for the structural-summary retry after an empty / safety-filtered response."""
+
+    def test_looks_like_safety_filter_response(self):
+        """Empty and blocked contents trigger the retry; truncation and real reviews do not."""
+        from council import _looks_like_safety_filter_response
+
+        assert _looks_like_safety_filter_response("")
+        assert _looks_like_safety_filter_response("ERROR: Empty content in API response")
+        assert _looks_like_safety_filter_response(
+            "ERROR: Content blocked by safety filter (finish_reason=content_filter)")
+        assert _looks_like_safety_filter_response("ERROR: No choices in API response")
+        assert not _looks_like_safety_filter_response(
+            "ERROR: Response truncated (finish_reason=length, 100 tokens).")
+        assert not _looks_like_safety_filter_response("## Assessment\nGood code.")
+
+    def test_structural_summary_redacts_diff_fence(self):
+        """A diff fence becomes counts + file list; the raw code is gone."""
+        from council import _structural_summary
+
+        message = (
+            "## Intent\nFix the parser\n\n"
+            "## Code Changes (Diff)\n```diff\n"
+            "--- a/src/parser.py\n+++ b/src/parser.py\n"
+            "@@ -1,2 +1,2 @@\n-PATTERN = r'(a+)+'\n+PATTERN = r'a+'\n+EXTRA = 1\n"
+            "```\n"
+        )
+        summary = _structural_summary(message)
+
+        assert summary.startswith("# RETRY:")
+        assert "Fix the parser" in summary
+        assert "+2/-1 lines across 1 file(s): src/parser.py" in summary
+        assert "(a+)+" not in summary
+
+    def test_structural_summary_plain_file_fence_reports_size(self):
+        """A file-content fence (no diff headers) reports its line count, not '0 file(s)'."""
+        from council import _structural_summary
+
+        summary = _structural_summary("### src/a.py\n```\nx = 1\ny = 2\nz = 3\n```\n")
+
+        assert "3 lines]" in summary
+        assert "0 file(s)" not in summary
+        assert "x = 1" not in summary
+
+    @responses.activate
+    def test_empty_response_retried_with_summary(self, mock_api_key, sample_code_context):
+        """An empty first response triggers one summary retry whose review is returned."""
+        responses.add(responses.POST, OPENROUTER_URL, status=200, json={
+            "choices": [{"message": {"content": ""}, "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": 1000, "completion_tokens": 50},
+        })
+        responses.add(responses.POST, OPENROUTER_URL, status=200, json={
+            "choices": [{"message": {"content": "## Assessment\nLooks fine."}}],
+            "usage": {"prompt_tokens": 300, "completion_tokens": 200},
+        })
+
+        from council import build_user_message
+        user_message = build_user_message(sample_code_context, "code")
+
+        result = call_reviewer(
+            role="performance",
+            model="google/gemini-3.1-pro-preview:online",
+            name="Performance Engineer",
+            user_message=user_message,
+            review_type="code",
+            api_key="test-key",
+            reasoning="high",
+            search_engine="native",
+        )
+
+        assert len(responses.calls) == 2
+        retry_payload = json.loads(responses.calls[1].request.body)
+        assert retry_payload["messages"][1]["content"].startswith("# RETRY:")
+        assert "plugins" not in retry_payload
+        assert result["retry_summary_used"] is True
+        assert result["content"].startswith("[Retried with structural summary")
+        assert "Looks fine." in result["content"]
+        # Both calls are billed, so both are counted.
+        assert result["tokens"] == {"input": 1300, "output": 250}
+
+    @responses.activate
+    def test_retry_still_empty_keeps_original_error(self, mock_api_key, sample_code_context):
+        """When the retry is also empty, the original error content is returned."""
+        for _ in range(2):
+            responses.add(responses.POST, OPENROUTER_URL, status=200, json={
+                "choices": [{"message": {"content": ""}, "finish_reason": "content_filter"}],
+                "usage": {"prompt_tokens": 100, "completion_tokens": 0},
+            })
+
+        from council import build_user_message
+        user_message = build_user_message(sample_code_context, "code")
+
+        result = call_reviewer(
+            role="performance",
+            model="google/gemini-3.1-pro-preview",
+            name="Performance Engineer",
+            user_message=user_message,
+            review_type="code",
+            api_key="test-key",
+            reasoning="high",
+        )
+
+        assert len(responses.calls) == 2
+        assert result["retry_summary_used"] is False
+        assert result["content"].startswith("ERROR: Content blocked")
+        assert result["tokens"]["input"] == 200
+
+    @responses.activate
+    def test_normal_response_not_retried(self, mock_api_key, sample_code_context):
+        """A real review makes exactly one call."""
+        responses.add(responses.POST, OPENROUTER_URL, status=200, json={
+            "choices": [{"message": {"content": "## Assessment\nGood."}}],
+            "usage": {},
+        })
+
+        from council import build_user_message
+        result = call_reviewer(
+            role="correctness",
+            model="openai/gpt-6-sol",
+            name="Correctness Expert",
+            user_message=build_user_message(sample_code_context, "code"),
+            review_type="code",
+            api_key="test-key",
+            reasoning="high",
+        )
+
+        assert len(responses.calls) == 1
+        assert result["retry_summary_used"] is False
+
+
 class TestRunCouncil:
     """Tests for the full council execution."""
 
