@@ -13,6 +13,16 @@ import sys
 import time
 from pathlib import Path
 
+# Force UTF-8 for stdout/stderr so non-ASCII review content (e.g. Vietnamese, CJK)
+# doesn't crash on Windows where the default code page is cp1252. Without this,
+# print() raises UnicodeEncodeError mid-stream and the review is silently truncated.
+for stream in (sys.stdout, sys.stderr):
+    if hasattr(stream, "reconfigure"):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
 # Configure logging (debug output to stderr, doesn't interfere with streaming)
 logging.basicConfig(
     level=logging.WARNING,
