@@ -14,7 +14,7 @@ You are helping the user get AI-powered code reviews via OpenRouter.
 
 **All features are free and open source:**
 - Single model review with DeepSeek V4 Pro (strong reasoning at low cost)
-- 3-model council with GPT 6.1 Sol + Gemini 3.1 Pro + Grok 4.7
+- 3-model council with GPT 6.1 Sol + Gemini 4 Argon + Grok 4.7
 - Web search integration
 - Up to 200K token context
 
@@ -33,7 +33,7 @@ You are helping the user get AI-powered code reviews via OpenRouter.
 - `--commit` - Force review of the last commit only
 
 **Mode options:**
-- `--council` - Use 3-model council (GPT 6.1 Sol + Gemini 3.1 Pro + Grok 4.7)
+- `--council` - Use 3-model council (GPT 6.1 Sol + Gemini 4 Argon + Grok 4.7)
 - `--free` - Use rotating free model from config
 - `--model <name>` - Override model (shortcuts: glm, gpt, kimi, deepseek, free)
 
@@ -148,7 +148,7 @@ Read the config from: `~/.claude/skills/h3/config.json`
   "free_model": "nvidia/nemotron-3-nano-30b-a3b:free",
   "council_models": {
     "correctness": "openai/gpt-6.1-sol",
-    "performance": "google/gemini-3.1-pro-preview",
+    "performance": "google/gemini-4-argon",
     "security": "x-ai/grok-4.7"
   },
   "reasoning": "high",
@@ -228,7 +228,7 @@ OPENROUTER_API_KEY=your-key-here
 |-------|-------|--------|---------------------|
 | DeepSeek V4 Pro (default) | $0.435 | $0.87 | ~$0.002-0.008 |
 | GPT 6.1 Sol (council) | $2.00 | $10.00 | ~$0.03-0.13 |
-| Gemini 3.1 Pro (council) | $2.00 | $12.00 | ~$0.05-0.18 |
+| Gemini 4 Argon (council) | $2.00 | $10.00 | ~$0.03-0.13 |
 | Grok 4.7 (council) | $1.60 | $4.80 | ~$0.03-0.10 |
 
 ### Estimation Formula
@@ -240,9 +240,10 @@ output_tokens = ~2500 (typical review length)
 # Single model mode (DeepSeek V4 Pro)
 single_cost = (input_tokens * 0.435 + output_tokens * 0.87) / 1_000_000
 
-# Council mode (all 3 models in parallel: GPT 6.1 Sol + Gemini 3.1 Pro + Grok 4.7)
-council_cost = (input_tokens * (2.00 + 2.00 + 1.60) + output_tokens * (10 + 12 + 4.80)) / 1_000_000
-             ≈ input_tokens * 5.60/M + output_tokens * 26.80/M
+# Council mode (all 3 models in parallel: GPT 6.1 Sol + Gemini 4 Argon + Grok 4.7)
+council_cost = (input_tokens * (2.00 + 2.00 + 1.60) + output_tokens * (10 + 10 + 4.80)) / 1_000_000
+             ≈ input_tokens * 5.60/M + output_tokens * 24.80/M
+# (Gemini 4 Argon is at its introductory $2/$10 through 2026-11-30, then $4/$20.)
 ```
 
 ### Display Cost Estimate and Confirm
@@ -269,9 +270,9 @@ After gathering context and saving to the unique context file (`$H3_CONTEXT_FILE
 If user declines, exit gracefully: "Review cancelled."
 
 **Examples:**
-- Small review (10K chars / 2.5K tokens): Single ~$0.003, Council ~$0.14
-- Medium review (50K chars / 12.5K tokens): Single ~$0.008, Council ~$0.23
-- Large review (200K chars / 50K tokens): Single ~$0.024, Council ~$0.57
+- Small review (10K chars / 2.5K tokens): Single ~$0.003, Council ~$0.08
+- Medium review (50K chars / 12.5K tokens): Single ~$0.008, Council ~$0.13
+- Large review (200K chars / 50K tokens): Single ~$0.024, Council ~$0.34
 
 ---
 
@@ -678,7 +679,7 @@ For council reviews, YOU (Claude) MUST synthesize with a comparison table showin
 
 ### Comparison of All Three Reviews
 
-| Aspect | Correctness (GPT 6.1 Sol) | Performance (Gemini 3.1) | Security (Grok 4.7) |
+| Aspect | Correctness (GPT 6.1 Sol) | Performance (Gemini 4 Argon) | Security (Grok 4.7) |
 |--------|----------------------|----------------------|---------------------|
 | **Focus** | Bugs, Logic, Edge Cases | Scaling, Memory, N+1 | Vulnerabilities, Auth |
 | **Findings** | ❌ 1 bug: null check missing | ⚠️ Potential N+1 query | ✅ No XSS, SQL injection |

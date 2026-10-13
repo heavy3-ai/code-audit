@@ -126,6 +126,11 @@ MODEL_PRICING = {
     "openai/gpt-5.2:online": {"input": 1.75, "output": 14.00},
     "google/gemini-3-pro-preview": {"input": 2.00, "output": 12.00},
     "google/gemini-3-pro-preview:online": {"input": 2.00, "output": 12.00},
+    # Gemini 4 Argon (2026-10-13) replaces 3.1 Pro as the Performance Critic. INTRODUCTORY $2 / $10 through 2026-11-30;
+    # Google raises it to $4 / $20 on 2026-12-01 — update these two rows then (OpenRouter passes the list price through).
+    "google/gemini-4-argon": {"input": 2.00, "output": 10.00},
+    "google/gemini-4-argon:online": {"input": 2.00, "output": 10.00},
+    # Gemini 3.1 Pro superseded by 4 Argon; kept so a pinned 3.1 Pro and prior runs' cost figures still resolve.
     "google/gemini-3.1-pro-preview": {"input": 2.00, "output": 12.00},
     "google/gemini-3.1-pro-preview:online": {"input": 2.00, "output": 12.00},
     # Grok 4.7 (2026-09-21) replaces 4.6 as the Security Analyst. This tool calls OpenRouter, which lists
