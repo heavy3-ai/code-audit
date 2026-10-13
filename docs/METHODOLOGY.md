@@ -24,7 +24,7 @@ After council review, Claude synthesizes all findings into a **3-column comparis
 
 **Example output:**
 
-| Aspect | Correctness (GPT 6.1 Sol) | Performance (Gemini 3.1) | Security (Grok 4.7) |
+| Aspect | Correctness (GPT 6.1 Sol) | Performance (Gemini 4 Argon) | Security (Grok 4.7) |
 |--------|----------------------|----------------------|---------------------|
 | **Focus** | Bugs, Logic, Edge Cases | Scaling, Memory, N+1 | Vulnerabilities, Auth |
 | **Findings** | ❌ Null check missing | ⚠️ Potential N+1 query | ✅ No issues found |
@@ -52,7 +52,7 @@ Three specialized reviewers, each with web search:
 | Role | Model | Focus | Search |
 |------|-------|-------|--------|
 | **Correctness Expert** | GPT 6.1 Sol | Bugs, logic errors, edge cases, race conditions | Bing |
-| **Performance Critic** | Gemini 3.1 Pro | N+1 queries, memory leaks, scaling bottlenecks | Exa |
+| **Performance Critic** | Gemini 4 Argon | N+1 queries, memory leaks, scaling bottlenecks | Exa |
 | **Security Analyst** | Grok 4.7 | Vulnerabilities, auth issues, data exposure | Exa |
 
 **Why Grok 4.7 for Security?**
@@ -72,7 +72,7 @@ The Kilo AI test specifically evaluated Grok 4 on prototype pollution, agentic A
 
 | Pillar | Implementation | Benefit |
 |--------|---------------|---------|
-| **Different Models** | GPT 6.1 Sol + Gemini 3.1 Pro + Grok 4.7 | Different training data, different blind spots |
+| **Different Models** | GPT 6.1 Sol + Gemini 4 Argon + Grok 4.7 | Different training data, different blind spots |
 | **Specialized Roles** | Correctness + Performance + Security | Forces comprehensive coverage |
 | **Different Search Sources** | Bing + Exa | Facts verified across independent indexes |
 
@@ -195,7 +195,7 @@ Heavy3 Code Audit uniquely offers **pre-implementation validation**:
 |-------------|-------|---------------|
 | **Architecture Design** | Patterns, SOLID, separation of concerns | Design Expert (GPT 6.1 Sol) |
 | **Plan Feasibility** | Is this approach realistic? What are the risks? | All three reviewers |
-| **Scalability Assessment** | Will this scale? What are the bottlenecks? | Scalability Analyst (Gemini 3.1 Pro) |
+| **Scalability Assessment** | Will this scale? What are the bottlenecks? | Scalability Analyst (Gemini 4 Argon) |
 | **Security Architecture** | Threat model, attack surface, auth design | Security Architect (Grok 4) |
 
 **Why this matters for AI-assisted coding (vibe coding):**

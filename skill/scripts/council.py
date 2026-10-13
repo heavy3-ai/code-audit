@@ -74,7 +74,7 @@ def retry_with_backoff(func, role_name="API", max_retries=MAX_RETRIES):
 # Web search is controlled by config.json "enable_web_search"
 DEFAULT_COUNCIL_MODELS = {
     "correctness": "openai/gpt-6.1-sol",
-    "performance": "google/gemini-3.1-pro-preview",
+    "performance": "google/gemini-4-argon",
     "security": "x-ai/grok-4.7",
 }
 
