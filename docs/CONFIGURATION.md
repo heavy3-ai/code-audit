@@ -96,7 +96,7 @@ The context limit includes: diff + full file contents + documentation + test fil
 |------|-------|--------------|-------|-------|
 | **Single** | DeepSeek V4 Pro | `deepseek/deepseek-v4-pro` | ~$0.435/$0.87 per 1M | **DEFAULT** - Strong reasoning at low cost |
 | **Free** | Nemotron Nano | `nvidia/nemotron-3-nano-30b-a3b:free` | $0.00 | Rotating free model |
-| **Council** | 3-Model Council | See `council_models` | ~$5.60/$24.80 per 1M | GPT 6.1 Sol + Gemini 4 Argon + Grok 4.7 |
+| **Council** | 3-Model Council | See `council_models` | ~$5.60/$24.80 per 1M (Gemini 4 Argon intro pricing through 2026-11-30; ~$7.60/$34.80 from 2026-12-01) | GPT 6.1 Sol + Gemini 4 Argon + Grok 4.7 |
 
 > The full `council.py` is in the public repo at `scripts/council.py`. You can read, audit, and modify it - it's MIT licensed. Council models are configurable via `council_models` in config.json.
 

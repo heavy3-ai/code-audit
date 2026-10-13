@@ -228,7 +228,7 @@ OPENROUTER_API_KEY=your-key-here
 |-------|-------|--------|---------------------|
 | DeepSeek V4 Pro (default) | $0.435 | $0.87 | ~$0.002-0.008 |
 | GPT 6.1 Sol (council) | $2.00 | $10.00 | ~$0.03-0.13 |
-| Gemini 4 Argon (council) | $2.00 | $10.00 | ~$0.04-0.15 |
+| Gemini 4 Argon (council) | $2.00 | $10.00 | ~$0.03-0.13 |
 | Grok 4.7 (council) | $1.60 | $4.80 | ~$0.03-0.10 |
 
 ### Estimation Formula
@@ -270,9 +270,9 @@ After gathering context and saving to the unique context file (`$H3_CONTEXT_FILE
 If user declines, exit gracefully: "Review cancelled."
 
 **Examples:**
-- Small review (10K chars / 2.5K tokens): Single ~$0.003, Council ~$0.14
-- Medium review (50K chars / 12.5K tokens): Single ~$0.008, Council ~$0.23
-- Large review (200K chars / 50K tokens): Single ~$0.024, Council ~$0.57
+- Small review (10K chars / 2.5K tokens): Single ~$0.003, Council ~$0.08
+- Medium review (50K chars / 12.5K tokens): Single ~$0.008, Council ~$0.13
+- Large review (200K chars / 50K tokens): Single ~$0.024, Council ~$0.34
 
 ---
 
