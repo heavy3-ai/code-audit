@@ -54,11 +54,12 @@ class TestCouncilModels:
         assert "security" in roles
         assert "scalability" in roles
 
-    def test_all_models_have_online_suffix_when_web_search_enabled(self):
-        """Verify all council models use :online when web search is enabled."""
+    def test_models_stay_bare_when_web_search_enabled(self):
+        """Web search rides the OpenRouter web plugin (search_engine), not an ':online' model suffix."""
         for council_type in ["code", "plan"]:
             for model in get_test_council(council_type):
-                assert ":online" in model["model"], f"{model['name']} missing :online suffix"
+                assert ":online" not in model["model"], f"{model['name']} should not carry :online"
+                assert model.get("search_engine") in ("native", "exa"), f"{model['name']} missing search_engine"
 
     def test_all_models_have_search_engine_when_web_search_enabled(self):
         """Verify all council models have search_engine when web search is enabled."""

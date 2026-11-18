@@ -431,9 +431,9 @@ class TestCostEstimation:
         """Estimate cost for GPT model."""
         result = estimate_cost("openai/gpt-5.4", 40000, 2500)
 
-        # GPT: $1.75/M input, $14.00/M output
-        assert abs(result["input_cost"] - 0.0175) < 0.0001
-        assert abs(result["output_cost"] - 0.035) < 0.0001
+        # GPT 5.4: $2.50/M input, $15.00/M output (MODEL_PRICING)
+        assert abs(result["input_cost"] - 0.025) < 0.0001
+        assert abs(result["output_cost"] - 0.0375) < 0.0001
 
     def test_estimate_cost_online_suffix_stripped(self):
         """Online suffix stripped for pricing lookup."""
@@ -441,7 +441,7 @@ class TestCostEstimation:
 
         # Should use same pricing as without :online
         assert result["model"] == "openai/gpt-5.4:online"
-        assert abs(result["input_cost"] - 0.0175) < 0.0001
+        assert abs(result["input_cost"] - 0.025) < 0.0001
 
     def test_dated_price_change_carbon_and_argon(self):
         """Gemini 4 Carbon/Argon: intro $2/$10 through Nov 30, $4/$20 list from Dec 1 2026 (":online" too)."""
