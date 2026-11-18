@@ -44,8 +44,8 @@ Get your free API key at [openrouter.ai/keys](https://openrouter.ai/keys)
 
 | Role | Model | Focus |
 |------|-------|-------|
-| Correctness | GPT 6.1 Sol | Bugs, logic, edge cases |
-| Performance | Gemini 4 Argon | N+1, memory, scaling |
+| Correctness | GPT 6.2 Sol | Bugs, logic, edge cases |
+| Performance | Gemini 4 Carbon | N+1, memory, scaling |
 | Security | Grok 4.7 | Vulnerabilities, auth |
 
 ## Docs
