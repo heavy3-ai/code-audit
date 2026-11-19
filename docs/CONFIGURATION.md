@@ -7,8 +7,8 @@ Edit `~/.claude/skills/h3/config.json` (or `%USERPROFILE%\.claude\skills\h3\conf
   "model": "deepseek/deepseek-v4-pro",
   "free_model": "nvidia/nemotron-3-nano-30b-a3b:free",
   "council_models": {
-    "correctness": "openai/gpt-6.1-sol",
-    "performance": "google/gemini-4-argon",
+    "correctness": "openai/gpt-6.2-sol",
+    "performance": "google/gemini-4-carbon",
     "security": "x-ai/grok-4.7"
   },
   "reasoning": "high",
@@ -24,7 +24,7 @@ Edit `~/.claude/skills/h3/config.json` (or `%USERPROFILE%\.claude\skills\h3\conf
 |--------|-------------|---------|
 | `model` | Model for single-model review | `deepseek/deepseek-v4-pro` |
 | `free_model` | Model for `--free` flag | `nvidia/nemotron-3-nano-30b-a3b:free` |
-| `council_models` | Models for council mode (see below) | GPT 6.1 Sol, Gemini 4 Argon, Grok 4.7 |
+| `council_models` | Models for council mode (see below) | GPT 6.2 Sol, Gemini 4 Carbon, Grok 4.7 |
 | `reasoning` | Reasoning level (always `high` for code review) | `high` |
 | `docs_folder` | Where your project documentation lives | `documents` |
 | `max_context` | Token limit for reviews | `200000` |
@@ -51,8 +51,8 @@ Customize which models are used for each council role:
 ```json
 {
   "council_models": {
-    "correctness": "openai/gpt-6.1-sol",
-    "performance": "google/gemini-4-argon",
+    "correctness": "openai/gpt-6.2-sol",
+    "performance": "google/gemini-4-carbon",
     "security": "x-ai/grok-4.7"
   }
 }
@@ -60,8 +60,8 @@ Customize which models are used for each council role:
 
 | Role | Default Model | Focus Area |
 |------|---------------|------------|
-| `correctness` | `openai/gpt-6.1-sol` | Bugs, logic errors, edge cases, type safety |
-| `performance` | `google/gemini-4-argon` | N+1 queries, memory leaks, scaling issues |
+| `correctness` | `openai/gpt-6.2-sol` | Bugs, logic errors, edge cases, type safety |
+| `performance` | `google/gemini-4-carbon` | N+1 queries, memory leaks, scaling issues |
 | `security` | `x-ai/grok-4.7` | Vulnerabilities, auth, injection, data exposure |
 
 **Notes:**
@@ -84,7 +84,7 @@ Customize which models are used for each council role:
 
 | Mode | Limit | Rationale |
 |------|-------|-----------|
-| **All modes** | 200K tokens | GPT 6.1 Sol (200K), Gemini 4 Argon (1M), Grok 4.7 (200K), DeepSeek V4 Pro (1M) - 200K matches GPT 6.1 Sol's window without hitting its surcharge tier |
+| **All modes** | 200K tokens | GPT 6.2 Sol (200K), Gemini 4 Carbon (1M), Grok 4.7 (200K), DeepSeek V4 Pro (1M) - 200K matches GPT 6.2 Sol's window without hitting its surcharge tier |
 
 The context limit includes: diff + full file contents + documentation + test files. For very large PRs, the skill automatically breaks them into module-by-module reviews.
 
@@ -96,7 +96,7 @@ The context limit includes: diff + full file contents + documentation + test fil
 |------|-------|--------------|-------|-------|
 | **Single** | DeepSeek V4 Pro | `deepseek/deepseek-v4-pro` | ~$0.435/$0.87 per 1M | **DEFAULT** - Strong reasoning at low cost |
 | **Free** | Nemotron Nano | `nvidia/nemotron-3-nano-30b-a3b:free` | $0.00 | Rotating free model |
-| **Council** | 3-Model Council | See `council_models` | ~$5.60/$24.80 per 1M (Gemini 4 Argon intro pricing through 2026-11-30; ~$7.60/$34.80 from 2026-12-01) | GPT 6.1 Sol + Gemini 4 Argon + Grok 4.7 |
+| **Council** | 3-Model Council | See `council_models` | ~$5.60/$24.80 per 1M (Gemini 4 Carbon intro pricing through 2026-11-30; ~$7.60/$34.80 from 2026-12-01) | GPT 6.2 Sol + Gemini 4 Carbon + Grok 4.7 |
 
 > The full `council.py` is in the public repo at `scripts/council.py`. You can read, audit, and modify it - it's MIT licensed. Council models are configurable via `council_models` in config.json.
 

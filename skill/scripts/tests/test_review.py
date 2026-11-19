@@ -19,6 +19,7 @@ from review import (
     resolve_model,
     retry_with_backoff,
     estimate_cost,
+    get_pricing,
     format_cost_estimate,
     OPENROUTER_URL,
     DEFAULT_CONFIG,
@@ -105,10 +106,10 @@ class TestModelResolution:
     """Tests for model shortcut resolution."""
 
     def test_resolve_gpt_shortcut(self, temp_config):
-        """Verify 'gpt' resolves to GPT 6.1 Sol."""
+        """Verify 'gpt' resolves to GPT 6.2 Sol."""
         _, config = temp_config
         model = resolve_model("gpt", config)
-        assert model == "openai/gpt-6.1-sol"
+        assert model == "openai/gpt-6.2-sol"
 
     def test_resolve_deepseek_shortcut(self, temp_config):
         """Verify 'deepseek' resolves to DeepSeek V4 Pro."""
@@ -137,8 +138,8 @@ class TestModelResolution:
     def test_resolve_case_insensitive(self, temp_config):
         """Verify shortcuts are case-insensitive."""
         _, config = temp_config
-        assert resolve_model("GPT", config) == "openai/gpt-6.1-sol"
-        assert resolve_model("Gpt", config) == "openai/gpt-6.1-sol"
+        assert resolve_model("GPT", config) == "openai/gpt-6.2-sol"
+        assert resolve_model("Gpt", config) == "openai/gpt-6.2-sol"
         assert resolve_model("DEEPSEEK", config) == "deepseek/deepseek-v4-pro"
 
 
@@ -430,9 +431,9 @@ class TestCostEstimation:
         """Estimate cost for GPT model."""
         result = estimate_cost("openai/gpt-5.4", 40000, 2500)
 
-        # GPT: $1.75/M input, $14.00/M output
-        assert abs(result["input_cost"] - 0.0175) < 0.0001
-        assert abs(result["output_cost"] - 0.035) < 0.0001
+        # GPT 5.4: $2.50/M input, $15.00/M output (MODEL_PRICING)
+        assert abs(result["input_cost"] - 0.025) < 0.0001
+        assert abs(result["output_cost"] - 0.0375) < 0.0001
 
     def test_estimate_cost_online_suffix_stripped(self):
         """Online suffix stripped for pricing lookup."""
@@ -440,7 +441,16 @@ class TestCostEstimation:
 
         # Should use same pricing as without :online
         assert result["model"] == "openai/gpt-5.4:online"
-        assert abs(result["input_cost"] - 0.0175) < 0.0001
+        assert abs(result["input_cost"] - 0.025) < 0.0001
+
+    def test_dated_price_change_carbon_and_argon(self):
+        """Gemini 4 Carbon/Argon: intro $2/$10 through Nov 30, $4/$20 list from Dec 1 2026 (":online" too)."""
+        from datetime import date
+        for model in ("google/gemini-4-carbon", "google/gemini-4-carbon:online", "google/gemini-4-argon"):
+            assert get_pricing(model, date(2026, 11, 30)) == {"input": 2.00, "output": 10.00}
+            assert get_pricing(model, date(2026, 12, 1)) == {"input": 4.00, "output": 20.00}
+        # No scheduled change: GPT 6.2 Sol stays at $2/$10.
+        assert get_pricing("openai/gpt-6.2-sol", date(2027, 6, 1)) == {"input": 2.00, "output": 10.00}
 
     def test_estimate_cost_free_model(self):
         """Free model has zero cost."""

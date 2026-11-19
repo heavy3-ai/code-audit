@@ -11,7 +11,9 @@ import logging
 import os
 import sys
 import time
+from datetime import date
 from pathlib import Path
+from typing import Optional
 
 # Configure logging (debug output to stderr, doesn't interfere with streaming)
 logging.basicConfig(
@@ -109,7 +111,10 @@ MODEL_PRICING = {
     "z-ai/glm-5:online": {"input": 1.00, "output": 3.20},
     "moonshotai/kimi-k2.5": {"input": 0.50, "output": 2.80},
     "moonshotai/kimi-k2.5:online": {"input": 0.50, "output": 2.80},
-    # GPT 6.1 Sol (2026-09-29) replaces 6 Sol as the Correctness Expert at the same $2 / $10 (OpenRouter matches list).
+    # GPT 6.2 Sol (2026-11-18) replaces 6.1 Sol as the Correctness Expert at the same $2 / $10 (OpenRouter matches list).
+    "openai/gpt-6.2-sol": {"input": 2.00, "output": 10.00},
+    "openai/gpt-6.2-sol:online": {"input": 2.00, "output": 10.00},
+    # GPT 6.1 Sol superseded by 6.2 Sol; kept so a pinned 6.1 Sol and prior runs' cost figures still resolve.
     "openai/gpt-6.1-sol": {"input": 2.00, "output": 10.00},
     "openai/gpt-6.1-sol:online": {"input": 2.00, "output": 10.00},
     # GPT 6 Sol (2026-09-22) replaced 5.6 Sol; kept so a pinned 6 Sol and prior runs' cost figures still resolve.
@@ -126,8 +131,11 @@ MODEL_PRICING = {
     "openai/gpt-5.2:online": {"input": 1.75, "output": 14.00},
     "google/gemini-3-pro-preview": {"input": 2.00, "output": 12.00},
     "google/gemini-3-pro-preview:online": {"input": 2.00, "output": 12.00},
-    # Gemini 4 Argon (2026-10-13) replaces 3.1 Pro as the Performance Critic. INTRODUCTORY $2 / $10 through 2026-11-30;
-    # Google raises it to $4 / $20 on 2026-12-01 — update these two rows then (OpenRouter passes the list price through).
+    # Gemini 4 Carbon (2026-11-18) replaces 4 Argon as the Performance Critic. Same INTRODUCTORY $2 / $10 through
+    # 2026-11-30; the $4 / $20 list price from 2026-12-01 is applied by SCHEDULED_PRICE_CHANGES below.
+    "google/gemini-4-carbon": {"input": 2.00, "output": 10.00},
+    "google/gemini-4-carbon:online": {"input": 2.00, "output": 10.00},
+    # Gemini 4 Argon superseded by Carbon (same rates and Dec 1 change); kept so a pinned Argon still resolves.
     "google/gemini-4-argon": {"input": 2.00, "output": 10.00},
     "google/gemini-4-argon:online": {"input": 2.00, "output": 10.00},
     # Gemini 3.1 Pro superseded by 4 Argon; kept so a pinned 3.1 Pro and prior runs' cost figures still resolve.
@@ -153,6 +161,25 @@ MODEL_PRICING = {
 
 # Default pricing for unknown models
 DEFAULT_PRICING = {"input": 0.50, "output": 1.00}
+
+# Dated provider price changes, keyed by base model (":online" shares its base's schedule). The latest
+# change whose date has arrived wins over MODEL_PRICING, so an announced reprice needs no follow-up edit.
+_GEMINI_4_LIST_FROM_DEC_1 = ("2026-12-01", {"input": 4.00, "output": 20.00})
+SCHEDULED_PRICE_CHANGES = {
+    "google/gemini-4-carbon": [_GEMINI_4_LIST_FROM_DEC_1],
+    "google/gemini-4-argon": [_GEMINI_4_LIST_FROM_DEC_1],
+}
+
+
+def get_pricing(model: str, today: Optional[date] = None) -> dict:
+    """Per-1M-token prices for a model on a given day (default: today)."""
+    base_model = model.replace(":online", "")
+    prices = MODEL_PRICING.get(model) or MODEL_PRICING.get(base_model) or DEFAULT_PRICING
+    day = (today or date.today()).isoformat()
+    for start, dated in SCHEDULED_PRICE_CHANGES.get(base_model, []):
+        if day >= start:
+            prices = dated
+    return prices
 
 
 def get_max_context(config: dict, model: str) -> int:
@@ -187,9 +214,7 @@ def estimate_cost(model: str, input_chars: int, est_output_tokens: int = 2500) -
     # Rule of thumb: 1 token ≈ 4 characters
     input_tokens = input_chars // 4
 
-    # Get pricing for model (strip :online suffix for lookup)
-    base_model = model.replace(":online", "")
-    prices = MODEL_PRICING.get(model) or MODEL_PRICING.get(base_model) or DEFAULT_PRICING
+    prices = get_pricing(model)
 
     input_cost = (input_tokens * prices["input"]) / 1_000_000
     output_cost = (est_output_tokens * prices["output"]) / 1_000_000
@@ -673,8 +698,8 @@ def call_openrouter(config: dict, review_type: str, context: dict, stream: bool 
 
 
 MODEL_SHORTCUTS = {
-    "gpt": "openai/gpt-6.1-sol",
-    "premium": "openai/gpt-6.1-sol",
+    "gpt": "openai/gpt-6.2-sol",
+    "premium": "openai/gpt-6.2-sol",
     "glm": "z-ai/glm-5",
     "standard": "deepseek/deepseek-v4-pro",
     "std": "deepseek/deepseek-v4-pro",
@@ -704,7 +729,7 @@ def main():
     parser.add_argument("--context-file", required=True,
                         help="Path to JSON file with review context")
     parser.add_argument("--model", "-m", default=None,
-                        help="Model to use: 'gpt'/'premium' (GPT 6.1 Sol), 'deepseek'/'std' (DeepSeek V4 Pro), 'glm', 'kimi', 'free', or full OpenRouter model ID")
+                        help="Model to use: 'gpt'/'premium' (GPT 6.2 Sol), 'deepseek'/'std' (DeepSeek V4 Pro), 'glm', 'kimi', 'free', or full OpenRouter model ID")
     parser.add_argument("--no-stream", action="store_true",
                         help="Disable streaming (wait for full response)")
 
